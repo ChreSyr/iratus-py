@@ -5,10 +5,9 @@ import baopig as bp
 
 class ChessScene(bp.Scene):
 
-    def __init__(self, app):
+    def __init__(self, application):
 
-        bp.Scene.__init__(self, app)
-        self.set_selectionrect_visibility(False)
+        bp.Scene.__init__(self, application, can_select=False)
 
         self.current_game = None
 
@@ -22,20 +21,19 @@ class ChessScene(bp.Scene):
 
 class IratusScene(bp.Scene):
 
-    def __init__(self, app):
+    def __init__(self, application):
 
-        bp.Scene.__init__(self, app)
-        self.set_selectionrect_visibility(False)
+        bp.Scene.__init__(self, application, can_select=False)
 
         self.current_game = None
 
         GameButtonsZone(self)
 
-    def open(self):
+    def handle_scene_open(self):
 
         # TODO : remove this in the final version
         if self.current_game is None:
-            self.app.new_game()
+            self.application.new_game()
 
     def receive(self, event):
 
@@ -48,48 +46,50 @@ class GameButtonsZone(bp.Zone):
 
     def __init__(self, scene):
 
-        bp.Zone.__init__(self, scene, size=(140, "100%"), background_color = "gray")
+        bp.Zone.__init__(self, scene, size=(140, "100%"), background_color="gray")
 
-        bp.GridLayer(self, row_height=60, col_width=140, nbcols=1)
+        bp.GridLayer(self, row_height=50, col_width=120, nbcols=1, spacing=10, padding=10)
 
-        bp.Button(self, text="Menu", row=0, sticky="center",
-                  command=bp.PrefilledFunction(self.app.open, "MenuScene"))
+        bp.Button(self, text="Menu", row=0, loc="center",
+                  command=bp.PrefilledFunction(self.application.open, "MenuScene"))
 
         def new_game():
-            if self.app.current_game is not None:
-                self.app.quit_game_dialog.open()
+            if self.application.current_game is not None:
+                self.application.quit_game_dialog.open()
             else:
-                self.app.new_game()
-        bp.Button(self, text="New Game", row=1, sticky="center", command=new_game)
+                self.application.new_game()
+        bp.Button(self, text="New Game", row=1, loc="center", command=new_game)
 
         def undo():
-            self.scene.app.current_game.undo()
-        bp.Button(self, text="Undo", row=2, sticky="center", command=undo)
+            self.application.current_game.undo()
+        bp.Button(self, text="Undo", row=2, loc="center", command=undo)
 
         def redo():
-            self.scene.app.current_game.redo()
-        bp.Button(self, text="Redo", row=3, sticky="center", command=redo)
+            self.application.current_game.redo()
+        bp.Button(self, text="Redo", row=3, loc="center", command=redo)
 
         def flip():
-            self.scene.app.current_game.board.display.flip()
-        bp.Button(self, text="Flip board", row=4, sticky="center", command=flip)
+            self.application.current_game.board.display.flip()
+        bp.Button(self, text="Flip board", row=4, loc="center", command=flip)
 
         def print_game():
-            game = self.scene.app.current_game
+            game = self.scene.application.current_game
+            game_str = ""
             for move in game.history:
                 try:
-                    print(move.notation, end=" ")
+                    game_str += move.notation + " "
                 except AttributeError:
-                    print()
-            print()
-        bp.Button(self, text="Print game in console", row=5, sticky="center", command=print_game)
+                    pass
+            bp.Dialog(self.application, title="Current game :", description=game_str, choices=("Thanks",),
+                      one_shot=True).open()
+        bp.Button(self, text="Print game", row=5, loc="center", command=print_game)
 
 
 class MenuScene(bp.Scene):
 
-    def __init__(self, app):
+    def __init__(self, application):
 
-        bp.Scene.__init__(self, app)
+        bp.Scene.__init__(self, application, can_select=False)
 
         MenuButtonsZone(self)
 
@@ -98,12 +98,12 @@ class MenuButtonsZone(bp.Zone):
 
     def __init__(self, scene):
 
-        bp.Zone.__init__(self, scene, size=(140, "100%"), background_color = "gray")
+        bp.Zone.__init__(self, scene, size=(140, "100%"), background_color="gray")
 
-        bp.GridLayer(self, row_height=60, col_width=140, nbcols=1)
+        bp.GridLayer(self, row_height=50, col_width=120, nbcols=1, spacing=10, padding=10)
 
-        bp.Button(self, text="Play chess", row=0, sticky="center",
-                  command=bp.PrefilledFunction(self.app.open, "ChessScene"))
+        bp.Button(self, text="Play chess", row=0, loc="center",
+                  command=bp.PrefilledFunction(self.application.open, "ChessScene"))
 
-        bp.Button(self, text="Play iratus", row=1, sticky="center",
-                  command=bp.PrefilledFunction(self.app.open, "IratusScene"))
+        bp.Button(self, text="Play iratus", row=1, loc="center",
+                  command=bp.PrefilledFunction(self.application.open, "IratusScene"))

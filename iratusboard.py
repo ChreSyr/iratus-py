@@ -75,7 +75,7 @@ class IratusBoard:
 
     def __setitem__(self, key, value):
 
-        if value is not 0:
+        if value != 0:
 
             assert isinstance(value, Piece), value
             if self._squares[value.square] is not value:
@@ -150,12 +150,12 @@ class IratusBoard:
             piece.unequip()
 
         # En passant
-        if captured_piece is 0 and piece.LETTER == "p":
+        if captured_piece == 0 and piece.LETTER == "p":
             stepback = 1 if piece.color == "w" else -1
             piece_behind = self[square + stepback]
-            if piece_behind is not 0 and piece_behind.color != piece.color and piece_behind.LETTER == "p":
+            if piece_behind != 0 and piece_behind.color != piece.color and piece_behind.LETTER == "p":
                 last_move = self.game.history[-1]
-                if last_move.piece is piece_behind and abs(last_move.start_square - last_move.end_square) is 2:
+                if last_move.piece is piece_behind and abs(last_move.start_square - last_move.end_square) == 2:
                     self[piece_behind.square] = 0
                     captured_piece = piece_behind
 
@@ -196,7 +196,7 @@ class IratusBoard:
                 elif isinstance(captured_piece, Leash):
                     captured_piece.dog.enrage()
 
-                if captured_piece is not 0:
+                if captured_piece != 0:
                     captured_piece.capture()
                     if captured_piece.trap is not None:
 
@@ -217,7 +217,7 @@ class IratusBoard:
             if piece.castle_rights[2] is False:
                 file = square // 10
                 if file in (2, 6):
-                    if file is 6:
+                    if file == 6:
                         rook_castle = self.move(self[square + 10], square - 10)
                     else:
                         rook_castle = self.move(self[square - 20], square + 10)
@@ -228,13 +228,15 @@ class IratusBoard:
 
         if redo is not None and redo.promotion is not None:
             piece.go_to(square, redo.promotion)
+            promotion = redo.promotion
         else:
             piece.go_to(square)
+            promotion = None
 
         # Trap capture when no piece was on the trap
-        if captured_piece is 0:
+        if captured_piece == 0:
             for trap in self.trap[piece.enemy_color]:
-                if trap.square is square and trap.state is 0:
+                if trap.square is square and trap.state == 0:
 
                     # A leash breaks traps
                     if piece.LETTER == "l":
@@ -276,12 +278,13 @@ class IratusBoard:
             elif abs(leash.square // 10 - dog.square // 10) > 1:
                 dog_pull = self.move(piece.dog, old_square)
 
-        # Return informations for the game history
+        # Return information for the game history
         return MoveForHistoric(self.game, piece, old_square, square, captured_piece,
                                rook_castle, stone_roll, dog_pull,
                                trap_equipement, trap_capture,
                                unequiped_trap, destroyed_trap, broken_cage,
-                               wasted_leash1, wasted_leash2)
+                               wasted_leash1, wasted_leash2,
+                               promotion)
 
     def undo(self, move):
 
@@ -326,7 +329,7 @@ class IratusBoard:
         if move.piece.trap is not None:
             move.piece.trap.move(move.start_square)
 
-        if move.capture is not 0:
+        if move.capture != 0:
             if move.broken_cage is None:
                 assert move.capture.board is self
                 move.capture.uncapture()
@@ -337,7 +340,7 @@ class IratusBoard:
         if move.destroyed_trap is not None:
             assert move.piece.LETTER == "l"
             move.destroyed_trap.undestroy()
-            if move.capture is not 0:
+            if move.capture != 0:
                 move.capture.equip(move.destroyed_trap)
 
         if move.unequiped_trap is not None:
@@ -458,11 +461,11 @@ class IratusBoardDisplay(bp.Zone):
         self.square_size = 64
 
         bp.Zone.__init__(self, scene, size=(self.square_size * 8, self.square_size * 10),
-                         background_image=self.app.images["iratusboard"], sticky="center")
+                         background_image=scene.application.images["iratusboard"], sticky="center")
 
         self.board = board
 
-        # This grid layer contains the matermarks made for displaying the selected piece valid moves (vm_watermark)
+        # This grid layer contains the watermarks made for displaying the selected piece valid moves (vm_watermark)
         self.vm_watermarks_layer = bp.GridLayer(self, bp.Rectangle, weight=1, name="vm_watermarks_layer",
                                                 row_height=self.square_size, col_width=self.square_size,
                                                 nbcols=8, nbrows=10)
@@ -498,14 +501,16 @@ class IratusBoardDisplay(bp.Zone):
         self.visible_vm_watermarks = []
 
         self.pawn_to_promote = None
-        self.promotion_dialog = bp.Dialog(self.app, "Promotion time !",
+        self.promotion_dialog = bp.Dialog(self.application, title="Promotion time !",
                                           choices=("Queen", "Rook", "Bishop", "Knight", "Dog"))
 
         def promote(ans):
             self.pawn_to_promote.promote(eval(ans))
-        self.promotion_dialog.signal.ANSWERED.connect(promote)
+        self.promotion_dialog.signal.ANSWERED.connect(promote, owner=None)
 
         self.orientation = "w"
+
+        self.all_piecewidgets = []
 
     def flip(self):
 
@@ -517,9 +522,10 @@ class IratusBoardDisplay(bp.Zone):
 
         with bp.paint_lock:  # freezes the display durong the operation
 
-            pws = tuple(self.children)
+            pws = tuple(self.all_piecewidgets)
             swapped = []
             for pw in pws:
+                assert isinstance(pw, PieceWidget)
                 if isinstance(pw, PieceWidget):
                     if pw in swapped:
                         continue
@@ -534,12 +540,12 @@ class IratusBoardDisplay(bp.Zone):
                 for trap in color_traps:
                     nsquare = 79 - trap.square if self.orientation == "b" else trap.square
                     x, y = nsquare // 10, nsquare % 10
-                    trap.trap_widget.move_at((x * self.square_size, y * self.square_size))
-                    trap.cage_widget.move_at((x * self.square_size, y * self.square_size))
+                    trap.trap_widget.set_pos(topleft=(x * self.square_size, y * self.square_size))
+                    trap.cage_widget.set_pos(topleft=(x * self.square_size, y * self.square_size))
 
     def select(self, widget):
 
-        if widget.is_sleeping:
+        if widget.is_asleep:
             return  # occurs when a piece is captured : the selection signal is emitted right after it falls asleep
 
         # When the stone is rolled by an enemy
@@ -549,7 +555,7 @@ class IratusBoardDisplay(bp.Zone):
                 widget.defocus()
                 return
 
-        self._selection_square.move_at(widget.topleft)
+        self._selection_square.set_pos(topleft=widget.rect.topleft)
         self._selection_square.show()
         self.selected_piece = widget
 
@@ -615,7 +621,8 @@ class MoveForHistoric:
                  rook_castle, stone_roll, dog_pull,
                  trap_equipement, trap_capture,
                  unequiped_trap, destroyed_trap, broken_cage,
-                 wasted_leash1, wasted_leash2):
+                 wasted_leash1, wasted_leash2,
+                 promotion=None):
 
         self.piece = piece
         self.start_square = old_square
@@ -624,7 +631,6 @@ class MoveForHistoric:
         self.rook_castle = rook_castle
         self.stone_roll = stone_roll
         self.dog_pull = dog_pull
-        self.promotion = None
         self.trap_equipement = trap_equipement
         self.trap_capture = trap_capture
         self.unequiped_trap = unequiped_trap
@@ -632,6 +638,7 @@ class MoveForHistoric:
         self.broken_cage = broken_cage
         self.wasted_leash1 = wasted_leash1
         self.wasted_leash2 = wasted_leash2
+        self.promotion = promotion
 
         n = ""
 
@@ -652,7 +659,7 @@ class MoveForHistoric:
                         for move in piece2.valid_moves:
                             if self.end_square is piece2.square + move:
                                 allies.append(piece2)
-                if len(allies) is 1:
+                if len(allies) == 1:
                     if self.start_square // 10 is allies[0].square // 10:
                         # They are on the same file, so we indiquate the rank
                         n += str(10 - self.start_square % 10)
@@ -682,7 +689,7 @@ class MoveForHistoric:
         # When two allied dogs could have jumped on this square
         # TODO
 
-        if self.capture is not 0:
+        if self.capture != 0:
 
             # When a pawn captures something, we write its origin file
             if self.piece.LETTER == "p":
@@ -692,7 +699,7 @@ class MoveForHistoric:
         n += self.piece.coordinates
 
         if rook_castle is not None:
-            if rook_castle.piece.square // 10 is 5:
+            if rook_castle.piece.square // 10 == 5:
                 n = "0-0"
             else:
                 n = "0-0-0"

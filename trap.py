@@ -41,10 +41,10 @@ class Trap:
             square_size = self.board.display.square_size
             if self.board.display.orientation == "w":
                 for widget in (self.trap_widget, self.cage_widget):
-                    widget.move_at(((square // 10) * square_size, (square % 10) * square_size))
+                    widget.set_pos(topleft=((square // 10) * square_size, (square % 10) * square_size))
             else:
                 for widget in (self.trap_widget, self.cage_widget):
-                    widget.move_at(((7 - square // 10) * square_size, (9 - square % 10) * square_size))
+                    widget.set_pos(topleft=((7 - square // 10) * square_size, (9 - square % 10) * square_size))
 
     def release(self, inmate):
 
@@ -126,7 +126,7 @@ class TrapWidget(bp.Widget):
 
         square_size = trap.board.display.square_size
 
-        image = trap.board.display.app.images[trap.color+"t"]
+        image = trap.board.display.application.images[trap.color+"t"]
         image = bp.transform.scale(image, (square_size, square_size))
 
         pos = ((trap.square // 10) * square_size, (trap.square % 10) * square_size)
@@ -141,7 +141,7 @@ class CageWidget(bp.Widget):
 
         square_size = trap.board.display.square_size
 
-        image = trap.board.display.app.images[trap.color+"c"]
+        image = trap.board.display.application.images[trap.color+"c"]
         image = bp.transform.scale(image, (square_size, square_size))
 
         pos = ((trap.square // 10) * square_size, (trap.square % 10) * square_size)

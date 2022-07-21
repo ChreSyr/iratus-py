@@ -72,7 +72,7 @@ class ChessBoard:
 
     def __setitem__(self, key, value):
 
-        if value is not 0:
+        if value != 0:
 
             try:
                 index = self._squares.index(value)
@@ -127,12 +127,12 @@ class ChessBoard:
         en_passant = None
 
         # En passant
-        if captured_piece is 0 and piece.LETTER == "p":
+        if captured_piece == 0 and piece.LETTER == "p":
             stepback = 1 if piece.color == "w" else -1
             piece_behind = self[square + stepback]
-            if piece_behind is not 0 and piece_behind.color != piece.color and piece_behind.LETTER == "p":
+            if piece_behind != 0 and piece_behind.color != piece.color and piece_behind.LETTER == "p":
                 last_move = self.game.history[-1]
-                if last_move.piece is piece_behind and abs(last_move.start_square - last_move.end_square) is 2:
+                if last_move.piece is piece_behind and abs(last_move.start_square - last_move.end_square) == 2:
                     self[piece_behind.square] = 0
                     captured_piece = piece_behind
                     en_passant = piece_behind.square
@@ -152,7 +152,7 @@ class ChessBoard:
             if piece.castle_rights[2] is False:
                 file = square // 10
                 if file in (2, 6):
-                    if file is 6:
+                    if file == 6:
                         rook_castle = self.move(self[square + 10], square - 10)
                     else:
                         rook_castle = self.move(self[square - 20], square + 10)
@@ -187,7 +187,7 @@ class ChessBoard:
         else:
             self[move.end_square] = move.capture
 
-        if move.capture is not 0:
+        if move.capture != 0:
             assert move.capture.board is self
             move.capture.uncapture()
 
@@ -267,7 +267,7 @@ class ChessBoardDisplay(bp.Zone):
         self.square_size = 80
 
         bp.Zone.__init__(self, scene, size=(self.square_size * 8, self.square_size * 8),
-                         background_image=self.app.images["chessboard"], sticky="center")
+                         background_image=self.application.images["chessboard"], sticky="center")
 
         self.board = board
 
@@ -298,7 +298,7 @@ class ChessBoardDisplay(bp.Zone):
         self.visible_vm_watermarks = []
 
         self.pawn_to_promote = None
-        self.promotion_dialog = bp.Dialog(self.app, "Promotion time !",
+        self.promotion_dialog = bp.Dialog(self.application, title="Promotion time !",
                                           choices=("Queen", "Rook", "Bishop", "Knight"))
 
         def promote(ans):
@@ -330,10 +330,10 @@ class ChessBoardDisplay(bp.Zone):
 
     def select(self, widget):
 
-        if widget.is_sleeping:
+        if widget.is_asleep:
             return  # occurs when a piece is captured : the selection signal is emitted right after it falls asleep
 
-        self._selection_square.move_at(widget.topleft)
+        self._selection_square.set_pos(topleft=widget.topleft)
         self._selection_square.show()
         self.selected_piece = widget
 
@@ -410,7 +410,7 @@ class MoveForHistoric:
                         for move in piece2.valid_moves:
                             if self.end_square is piece2.square + move:
                                 allies.append(piece2)
-                if len(allies) is 1:
+                if len(allies) == 1:
                     if self.start_square // 10 is allies[0].square // 10:
                         # They are on the same file, so we indiquate the rank
                         n += str(10 - self.start_square % 10)
@@ -437,7 +437,7 @@ class MoveForHistoric:
         # NOTE : some very rare times, there is 3 queens who can go on the same square
         # does my notation method handles that ?
 
-        if self.capture is not 0:
+        if self.capture != 0:
 
             # When a pawn captures something, we write its origin file
             if self.piece.LETTER == "p":
@@ -446,18 +446,3 @@ class MoveForHistoric:
 
         n += self.piece.coordinates
         self.notation = n
-
-    def __getitem__TOREMOVE(self, item):
-
-        if item is 0:
-            return self.piece
-        if item is 1:
-            return self.start_square
-        if item is 2:
-            return self.end_square
-        if item is 3:
-            return self.capture
-        if item is 4:
-            return self.promotion
-        raise KeyError
-

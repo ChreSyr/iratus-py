@@ -1,5 +1,6 @@
 
 
+import baopig
 from piece import Piece
 from dog import Dog
 
@@ -36,7 +37,7 @@ class Pawn(Piece):
 
         if self.rank is self.promotion_rank:
             if promotion is not None:
-                self.promote(promotion)
+                self.promote(promotion, update_history=False)
 
             elif self.widget is not None:
                 self.board.display.pawn_to_promote = self
@@ -50,7 +51,7 @@ class Pawn(Piece):
 
         super().undo(move)
 
-    def promote(self, piece_class):
+    def promote(self, piece_class, update_history=True):
         """
         :param piece_class: one of Queen, Rook, Bishop, Knight
         """
@@ -65,14 +66,21 @@ class Pawn(Piece):
 
         # Display
         if self.widget is not None:
-            self.widget.kill()
-            self.init_display()
+
+            image = self.board.display.application.images[self.color + self.LETTER]
+            image = baopig.transform.scale(image, (self.board.display.square_size, self.board.display.square_size))
+            self.widget.set_surface(image)
+
+            # self.widget.kill()
+            # self.init_display()
 
             self.board.calculator.get_simulated_piece(self).promote(piece_class)
 
             # Game historic
             # Needed because the dialog window is closed after the end of the history saving
-            self.board.game.history[-1].promotion = piece_class
+            if update_history:
+                self.board.game.history[-1].promotion = piece_class
+
             self.board.update_pieces_vm()
 
         # valid moves
@@ -95,8 +103,11 @@ class Pawn(Piece):
 
         # Display
         if self.widget is not None:
-            self.widget.kill()
-            self.init_display()
+            image = self.board.display.application.images[self.color + self.LETTER]
+            image = baopig.transform.scale(image, (self.board.display.square_size, self.board.display.square_size))
+            self.widget.set_surface(image)
+            # self.widget.kill()
+            # self.init_display()
 
         # Calcul
         if self.board.calculator is not None:
@@ -181,15 +192,16 @@ class IPawn(Pawn):  # Pawns for iratus
             self.board.ed_secondmove = None
     still_has_to_move = property(lambda self: self._still_has_to_move, _set_still_has_to_move)
 
-    def promote(self, piece_class):
+    def promote(self, piece_class, **kwargs):
 
-        super().promote(piece_class)
+        super().promote(piece_class, **kwargs)
         if piece_class is Dog:
+            if self.widget is not None:
+                self.widget.enraged_image = baopig.transform.scale(
+                    self.board.display.application.images[self.color+"ed"],
+                    (self.board.display.square_size, self.board.display.square_size)
+                )
             Dog.enrage(self)
-
-    def unpromote_TOREMOVE(self):
-
-        super().unpromote()
 
     def update_valid_moves(self):
         """

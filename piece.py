@@ -54,7 +54,7 @@ class Piece:
         self.valid_moves = self.antiking_squares = ()
 
         if self.widget is not None:
-            self.widget.asleep()
+            self.widget.sleep()
 
     def equip(self, trap):
 
@@ -75,10 +75,17 @@ class Piece:
 
         # Memorizing the new position for the display
         if self.widget is not None:
+
             if self.board.display.orientation == "w":
-                self.widget.layer.move(self.widget, square // 10, square % 10)
+                col, row = square // 10, square % 10
             else:
-                self.widget.layer.move(self.widget, 7 - square // 10, self.board.nbranks - 1 - square % 10)
+                col, row = 7 - square // 10, self.board.nbranks - 1 - square % 10
+
+            if self.widget.is_awake:
+                self.widget.layer.move(self.widget, col, row)
+            else:
+                self.widget._row = row
+                self.widget._col = col
 
     def init_display(self):
 
@@ -90,7 +97,7 @@ class Piece:
         self.is_captured = False
 
         if self.widget is not None:
-            self.widget.origin.unlock()
+            self.widget.set_lock(pos=False)
             self.widget.wake()
 
     def undo(self, move):
@@ -131,11 +138,11 @@ class Piece:
                 piece_on_attainable_square = self.board[square]
 
                 # if no piece is on the square
-                if piece_on_attainable_square is 0:
+                if piece_on_attainable_square == 0:
 
                     # if there is an enemy trap on that square, we can't ride it
                     if hasattr(self.board, "trap"):
-                        if True in (trap.state is 0 and trap.square is square
+                        if True in (trap.state == 0 and trap.square is square
                                     for trap in self.board.trap[self.enemy_color]):
                             continue
 
@@ -156,7 +163,7 @@ class Piece:
                         # Only works if all the rolling pieces have 1 square moves
                         if self.board.has_square(x + 2 * dx, y + 2 * dy):
                             piece_behind_stone = self.board[square + dx * 10 + dy]
-                            if piece_behind_stone is not 0:
+                            if piece_behind_stone != 0:
                                 continue
 
                     self.valid_moves += (d,)
@@ -190,13 +197,13 @@ class RollingPiece(Piece):
 
                     piece_on_attainable_square = self.board[square + d]
 
-                    if piece_on_attainable_square is 0:
+                    if piece_on_attainable_square == 0:
 
                         rolling = True
 
                         # if there is an enemy trap on that square, we can't ride it
                         if hasattr(self.board, "trap"):
-                            if True in (trap.state is 0 and trap.square is square + d
+                            if True in (trap.state == 0 and trap.square is square + d
                                         for trap in self.board.trap[self.enemy_color]):
                                 rolling = False
 
@@ -205,7 +212,7 @@ class RollingPiece(Piece):
 
                             # if there is an ally trap on that square, we can't go further
                             if hasattr(self.board, "trap"):
-                                if True in (trap.state is 0 and trap.square is square + d
+                                if True in (trap.state == 0 and trap.square is square + d
                                             for trap in self.board.trap[self.color]):
                                     rolling = False
 
@@ -225,21 +232,21 @@ class RollingPiece(Piece):
                         if piece_on_attainable_square.LETTER == "s":
                             if self.board.has_square(x + 2 * dx, y + 2 * dy):
                                 piece_behind_stone = self.board[square + d + dx * 10 + dy]
-                                if piece_behind_stone is not 0:
+                                if piece_behind_stone != 0:
                                     continue
 
                         self.valid_moves += (d,)
 
 
-class PieceWidget(bp.Widget, bp.Linkable):
+class PieceWidget(bp.Focusable):
 
     def __init__(self, piece):
 
-        image = piece.board.display.app.images[piece.color+piece.LETTER]
+        image = piece.board.display.application.images[piece.color+piece.LETTER]
         image = bp.transform.scale(image, (piece.board.display.square_size, piece.board.display.square_size))
 
-        bp.Widget.__init__(self, piece.board.display, col=piece.square // 10, row=piece.square % 10, surface=image)
-        bp.Linkable.__init__(self)
+        bp.Focusable.__init__(self, piece.board.display, col=piece.square // 10, row=piece.square % 10,
+                              surface=image)
 
         self.piece = piece
 
@@ -249,9 +256,11 @@ class PieceWidget(bp.Widget, bp.Linkable):
         if piece.LETTER == "d":
             self.calm_image = image
             self.enraged_image = bp.transform.scale(
-                piece.board.display.app.images[piece.color+"ed"],
+                piece.board.display.application.images[piece.color+"ed"],
                 (piece.board.display.square_size, piece.board.display.square_size)
             )
+        
+        self.piece.board.display.all_piecewidgets.append(self)
 
     def __str__(self):
 
@@ -259,13 +268,14 @@ class PieceWidget(bp.Widget, bp.Linkable):
 
     def handle_focus(self):
 
-        if self.is_sleeping:
+        if self.is_asleep:
             self.defocus()  # when a piece grabs another one, the grabbed one is focused just before it disappears
-        self.parent.select(self)
+        else:
+            self.parent.select(self)
 
     def handle_defocus(self):
 
-        if self.is_sleeping:
+        if self.is_asleep:
             return
 
         self._was_selected = False
@@ -273,7 +283,7 @@ class PieceWidget(bp.Widget, bp.Linkable):
 
     def handle_link(self):
 
-        if self.is_sleeping:
+        if self.is_asleep:
             return
 
         if self._was_selected:
@@ -296,6 +306,9 @@ class PieceWidget(bp.Widget, bp.Linkable):
 
     def handle_unlink(self):
 
+        if self.is_asleep:
+            return
+        
         for vm_watermark in self.parent.visible_vm_watermarks:
             if vm_watermark.collidemouse():
                 assert self.parent.selected_piece is self
