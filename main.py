@@ -14,6 +14,7 @@ import baopig as bp
 load = bp.image.load
 from scenes import MenuScene, GameScene
 from game import Game
+from board import BoardDisplay
 from chessboard import ChessBoard
 from iratusboard import IratusBoard
 
@@ -41,14 +42,15 @@ class IratusApp(bp.Application):
 
         bp.Application.__init__(self, theme=iratus_theme, size=(960, 640))
 
-        self.images = {"chessboard": load("Images/chessboard.png"),
-                       "iratusboard": load("Images/iratusboard.png")}
+        self.images = {}
 
         for p in ("p", "r", "n", "b", "q", "k") + ("d", "ed", "l", "t", "c", "s"):
             for c in ("w", "b"):
                 self.images[c+p] = load("Images/"+c+p+".png")
 
         self.iratus_scene = GameScene(self, board_class=IratusBoard, name="IratusScene")
+        self.iratus_scene.set_style_for(BoardDisplay, promotion_choices=("Queen", "Rook", "Bishop", "Knight", "Dog"),
+                                        background_image=bp.image.load("Images/iratusboard.png"))
         self.chess_scene = GameScene(self, board_class=ChessBoard, name="ChessScene")
         self.menu_scene = MenuScene(self)
 

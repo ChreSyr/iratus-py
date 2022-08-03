@@ -1,7 +1,7 @@
 
 
 import baopig as bp
-from board import Board, BoardPosition, VM_Watermark
+from board import Board, BoardDisplay, BoardPosition, VM_Watermark
 from piece import Piece, PieceWidget, file_dict
 from pawn import Pawn
 from knight import Knight
@@ -43,7 +43,7 @@ class ChessBoard(Board):
         if self.display is not None:
             raise PermissionError
 
-        self.display = ChessBoardDisplay(self, scene)
+        self.display = BoardDisplay(self, scene, square_size=80)
         for piece in self.pieces:
             piece.init_display()
 
@@ -174,107 +174,6 @@ class ChessBoardCalculator(ChessBoard):
     def get_simulated_piece(self, piece):
 
         return self.pieces_correspondence[piece]
-
-
-class ChessBoardDisplay(bp.Zone):
-
-    def __init__(self, board, scene):
-
-        self.square_size = 80
-
-        bp.Zone.__init__(self, scene, size=(self.square_size * 8, self.square_size * 8),
-                         background_image=scene.application.images["chessboard"], sticky="center")
-
-        self.board = board
-
-        # This grid layer contains the matermarks made for displaying the selected piece valid moves (vm_watermark)
-        self.vm_watermarks_layer = bp.GridLayer(self, bp.Rectangle, weight=1, name="vm_watermarks_layer",
-                                                row_height=self.square_size, col_width=self.square_size,
-                                                nbcols=8, nbrows=8)
-        # This layer contains the informative squares, as the selection square
-        self.informative_squares_layer = bp.Layer(self, bp.Rectangle, weight=2, name="informative_squares_layer")
-
-        # This grid layer contains the pieces, captured and on the board ones
-        self.pieces_layer = bp.GridLayer(self, PieceWidget, name="pieces_layer", weight=3,
-                                         row_height=self.square_size, col_width=self.square_size,
-                                         nbcols=8, nbrows=8)
-
-        # This rectangle highlights the selected piece
-        self._selection_square = bp.Rectangle(self, width=self.square_size, height=self.square_size,
-                                              color=(50, 250, 50))
-        self._selection_square.hide()
-
-        # Memory for the selected piece
-        self.selected_piece = None
-
-        # Dict referencing the square watermarks made for displaying a piece valid moves
-        self.vm_watermarks = dict((i, VM_Watermark(self, i)) for i in self.board.existing_squares)
-
-        # In-game displayed watermarks
-        self.visible_vm_watermarks = []
-
-        self.pawn_to_promote = None
-        self.promotion_dialog = bp.Dialog(self.application, title="Promotion time !",
-                                          choices=("Queen", "Rook", "Bishop", "Knight"))
-
-        def promote(ans):
-            self.pawn_to_promote.promote(eval(ans))
-        self.promotion_dialog.signal.ANSWERED.connect(promote, owner=None)
-
-        self.orientation = "w"
-
-        self.all_piecewidgets = []
-
-    def flip(self):
-
-        self.orientation = "b" if self.orientation == "w" else "w"
-
-        assert self.selected_piece is None
-
-        with bp.paint_lock:  # freezes the display durong the operation
-
-            pws = tuple(self.children)
-            swapped = []
-            for pw in pws:
-                if isinstance(pw, PieceWidget):
-                    if pw in swapped:
-                        continue
-                    try:
-                        pw.piece.go_to(pw.piece.square)
-                    except PermissionError:
-                        pw2 = self.board[79 - pw.piece.square].widget
-                        self.pieces_layer.swap(pw, pw2)
-                        swapped.append(pw2)
-
-    def select(self, widget):
-
-        if widget.is_asleep:
-            return  # occurs when a piece is captured : the selection signal is emitted right after it falls asleep
-
-        self._selection_square.set_pos(topleft=widget.rect.topleft)
-        self._selection_square.show()
-        self.selected_piece = widget
-
-        if widget.piece.color != self.board.game.turn:
-            return
-
-        for move in widget.piece.valid_moves:
-            square = widget.piece.square + move
-            vm_watermark = self.vm_watermarks[square]
-            vm_watermark.show()
-            self.visible_vm_watermarks.append(vm_watermark)
-
-    def unselect(self, widget):
-
-        assert widget is self.selected_piece
-        self.selected_piece = None
-        self._selection_square.hide()
-
-        for vm_watermark in self.visible_vm_watermarks:
-            if vm_watermark.collidemouse():
-                self.board.game.move(widget.piece, vm_watermark.square)
-            vm_watermark.hide()
-        self.visible_vm_watermarks.clear()
 
 
 class MoveForHistoric:

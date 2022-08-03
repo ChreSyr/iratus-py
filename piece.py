@@ -5,6 +5,17 @@ import baopig as bp
 file_dict = {0:"a", 1:"b", 2:"c", 3:"d", 4:"e", 5:"f", 6:"g", 7:"h"}
 
 
+class Bonus:
+
+    def __init__(self, board, square):
+
+        self.widget = None
+        self.board = board
+        self.square = square
+
+        self.board.add(self)
+
+
 class Piece:
 
     LETTER = None
@@ -246,7 +257,7 @@ class PieceWidget(bp.Focusable):
         image = bp.transform.scale(image, (piece.board.display.square_size, piece.board.display.square_size))
 
         bp.Focusable.__init__(self, piece.board.display, col=piece.square // 10, row=piece.square % 10,
-                              surface=image)
+                              surface=image, layer="pieces_layer")
 
         self.piece = piece
 

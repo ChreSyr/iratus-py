@@ -1,17 +1,18 @@
 
 
 import baopig as bp
+from piece import Bonus
 
 
-class Trap:
+class Trap(Bonus):
 
     LETTER = "t"
 
     def __init__(self, board, color, square):
 
-        self.board = board
+        Bonus.__init__(self, board, square)
+
         self.color = color
-        self.square = square
         self.trap_widget = None
         self.cage_widget = None
         self.ally = None
@@ -130,7 +131,7 @@ class TrapWidget(bp.Widget):
         image = bp.transform.scale(image, (square_size, square_size))
 
         pos = ((trap.square // 10) * square_size, (trap.square % 10) * square_size)
-        bp.Widget.__init__(self, trap.board.display, pos=pos, surface=image)
+        bp.Widget.__init__(self, trap.board.display, pos=pos, surface=image, layer="back_layer")
 
         self.trap = trap
 
@@ -145,7 +146,7 @@ class CageWidget(bp.Widget):
         image = bp.transform.scale(image, (square_size, square_size))
 
         pos = ((trap.square // 10) * square_size, (trap.square % 10) * square_size)
-        bp.Widget.__init__(self, trap.board.display, pos=pos, surface=image)
+        bp.Widget.__init__(self, trap.board.display, pos=pos, surface=image, layer="front_layer")
 
         self.trap = trap
         self.hide()
