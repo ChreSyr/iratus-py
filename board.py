@@ -1,4 +1,5 @@
 
+import baopig as bp
 from piece import Piece
 
 
@@ -95,3 +96,27 @@ class Board:
     def update_pieces_vm(self):
         """ Update the valid moves of all the remaining pieces """
         raise NotImplemented
+
+
+class VM_Watermark:
+
+    def __init__(self, board, square):
+
+        class W_VM_Watermark(bp.Rectangle):
+
+            def __init__(self):
+
+                bp.Rectangle.__init__(self, board, col=square//10, row=square%10, color=(50, 250, 50, 50),
+                                      width=80, height=80, layer=board.vm_watermarks_layer)
+                self.hide()
+
+        self.board = board
+        self.square = square
+        self.widget = W_VM_Watermark()
+
+        self.col = self.widget.col
+        self.row = self.widget.row
+
+        self.show = self.widget.show
+        self.hide = self.widget.hide
+        self.collidemouse = self.widget.collidemouse
