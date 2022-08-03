@@ -3,6 +3,7 @@
 # BAOPIG TODOs :
 # Remove print("baopig from WIP")
 # Dialog.handle_answer(answer)
+# When a button is resized, update the text size
 
 
 import os
@@ -21,6 +22,7 @@ iratus_theme = bp.Theme()
 iratus_theme.set_style_for(bp.Button, background_color=(18, 185, 18), padding=(3, 5))
 iratus_theme.set_style_for(bp.Text, font_file="pierceroman", font_height=30, font_bold=True)
 iratus_theme.set_style_for(bp.DialogFrame, pos=("50%", 10), loc="midtop", width="90%")
+iratus_theme.set_style_for(bp.DialogAnswerButton, width=500)
 
 
 class QuitGameDialog(bp.Dialog):

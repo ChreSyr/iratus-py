@@ -1,3 +1,4 @@
+import baopig as bp
 
 
 class Game:
@@ -39,7 +40,7 @@ class Game:
         else:
             self.counter50rule += 1
         if self.counter50rule >= 50:
-            return "Draw by 50-moves rule"
+            return "draw by 50-moves rule"
 
         # Draw by insufficient material
         remaining_pieces = {"w": [], "b": []}
@@ -70,7 +71,7 @@ class Game:
                 if position == current_position:
                     count += 1
             if count == 3:
-                return "Draw by repetition"
+                return "draw by repetition"
 
         game_state = "keep going"
         if self.board.king[self.turn].in_check:
@@ -124,6 +125,16 @@ class Game:
             self.history[-1].notation += "+"
 
         # TODO : promotion, cage, compact edog notation, result of the game
+        # TODO : trigger an end of game check when a promotion is done
+
+        if game_state in ("checkmate", "stalemate",
+                          "draw by repetition", "draw by insufficient material", "draw by 50-moves rule"):
+            description = ""
+            if game_state == "checkmate":
+                winner = "Black" if piece.color == "b" else "White"
+                description = winner + " won"
+            bp.Dialog(self.app, one_shot=True, title=game_state.capitalize(), description=description,
+                      choices=("That was a real good game",)).open()
 
     def redo(self):
         """
