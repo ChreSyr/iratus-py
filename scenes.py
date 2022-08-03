@@ -3,28 +3,13 @@
 import baopig as bp
 
 
-class ChessScene(bp.Scene):
+class GameScene(bp.Scene):
 
-    def __init__(self, application):
+    def __init__(self, app, board_class, name):
 
-        bp.Scene.__init__(self, application, can_select=False)
+        bp.Scene.__init__(self, app, can_select=False, name=name)
 
-        self.current_game = None
-
-        GameButtonsZone(self)
-
-    def receive(self, event):
-
-        if event.type is bp.KEYDOWN:
-            print(2)
-
-
-class IratusScene(bp.Scene):
-
-    def __init__(self, application):
-
-        bp.Scene.__init__(self, application, can_select=False)
-
+        self.board_class = board_class
         self.current_game = None
 
         GameButtonsZone(self)
@@ -37,9 +22,10 @@ class IratusScene(bp.Scene):
 
     def receive(self, event):
 
+        # TODO : remove this in the final version
         if event.type is bp.KEYDOWN:
             b = self.current_game.board
-            print(2)
+            print(2)  # made for debugging
 
 
 class GameButtonsZone(bp.Zone):

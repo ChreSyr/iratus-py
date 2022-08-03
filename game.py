@@ -1,21 +1,17 @@
 
 
-from chessboard import ChessBoard
+class Game:
 
+    def __init__(self, scene):
 
-class ChessGame:
+        self.app = scene.application
 
-    def __init__(self, app):
+        self.board = scene.board_class(self)
 
-        self.app = app
-
-        self.board = ChessBoard(self)
-
-        # an history element is an object saying (a "piece" came from "square1" to "square2" and captured "something")
+        # a history element is an object saying (a "piece" came from "square1" to "square2" and captured "something")
         self.history = []
-        self.back_history = []
-
-        self.fat_history = []
+        self.back_history = []  # stores undone moves
+        self.fat_history = []  # stores board positions (for draws by repetition)
 
         # w is white to move, b is black to move
         self.turn = "w"
@@ -23,7 +19,7 @@ class ChessGame:
         # for 50-moves rule
         self.counter50rule = 0
 
-        # w is white won, b is black won, d is draw
+        # w is white won, b is black won, d is drawn
         self.result = None
 
         # Initializing pieces valid moves
@@ -31,14 +27,14 @@ class ChessGame:
             piece.update_valid_moves()
 
         # Initializing board and pieces display
-        self.board.init_display(app.chess_scene)
+        self.board.init_display(scene)
 
     def check_for_end(self):
 
         # Draw by 50-moves rule
-        if self.history[-1].piece.LETTER is "p":
+        if self.history[-1].piece.LETTER == "p":
             self.counter50rule = 0
-        elif self.history[-1].capture is not 0:
+        elif self.history[-1].capture != 0:
             self.counter50rule = 0
         else:
             self.counter50rule += 1
@@ -49,17 +45,18 @@ class ChessGame:
         remaining_pieces = {"w": [], "b": []}
         for piece in self.board.pieces:
             if piece.is_captured is False:
-                if piece.LETTER is "k":
+                if piece.LETTER == "k":
                     continue
                 remaining_pieces[piece.color].append(piece)
+
         def insufficient_materiel(set):
             # TODO : sligthly more accurate draws
             # For example, if the two players still have a kniht, checkmate is possible
-            if len(set) is 0:
+            if len(set) == 0:
                 return True
-            if len(set) is 1:
+            if len(set) == 1:
                 return set[0].LETTER in ("n", "b")
-            if len(set) is 2:
+            if len(set) == 2:
                 return set[0].LETTER == set[0].LETTER == "n"
             return False
         if insufficient_materiel(remaining_pieces["w"]) and insufficient_materiel(remaining_pieces["b"]):
@@ -80,7 +77,7 @@ class ChessGame:
             game_state = "check"
 
         for piece in self.board.set[self.turn]:
-            if piece.valid_moves:
+            if not piece.is_captured and piece.valid_moves:
 
                 # Still at least one valid move
 
@@ -101,11 +98,22 @@ class ChessGame:
         # Next turn
         # For the color who just played, we need to update the antiking squares
         self.turn = piece.enemy_color
+
+        # Enraged dog exception
+        # TODO
+        if piece.LETTER == "d" and piece.is_enraged:
+            if piece.cage is None:
+                piece.still_has_to_move = not piece.still_has_to_move
+                if piece.still_has_to_move:
+                    self.turn = piece.color
+            else:  # the dog just got trapped
+                piece.still_has_to_move = False
+
+        # We need to update the antiking squares for both colors
         self.board.update_pieces_vm()
 
         # This occurs after the valid moves update because we need the castling rights
         self.fat_history.append(self.board.get_position())
-        # print(self.fat_history[-1].castle_rights["w"])
         self.back_history.clear()
 
         game_state = self.check_for_end()
@@ -115,7 +123,7 @@ class ChessGame:
         elif game_state == "check":
             self.history[-1].notation += "+"
 
-        print(self.history[-1].notation)  # TODO : promotion, result of the game
+        # TODO : promotion, cage, compact edog notation, result of the game
 
     def redo(self):
         """
@@ -129,9 +137,26 @@ class ChessGame:
 
         assert last_undone_move.piece.color is self.turn
 
+        # TODO
+        if hasattr(last_undone_move, "unequiped_trap"):
+            if last_undone_move.unequiped_trap is not None:
+                last_undone_move.unequiped_trap.trap_widget.hide()  # so the unequipement works
+
         self.history.append(self.board.move(last_undone_move.piece, last_undone_move.end_square, redo=last_undone_move))
 
         self.turn = last_undone_move.piece.enemy_color
+
+        # Enraged dog exception
+        # TODO
+        piece = last_undone_move.piece
+        if piece.LETTER == "d" and piece.is_enraged:
+            if piece.cage is None and last_undone_move.broken_cage is None:
+                piece.still_has_to_move = not piece.still_has_to_move
+                if piece.still_has_to_move:
+                    self.turn = piece.color
+            else:  # just got trapped
+                piece.still_has_to_move = False
+
         self.board.update_pieces_vm()
 
         # This occurs after the valid moves update because we need the castling rights
@@ -149,7 +174,16 @@ class ChessGame:
         self.fat_history.pop(-1)
         self.back_history.append(last_move)
 
-        assert last_move.piece.color is not self.turn
+        # TODO
+        if last_move.piece.LETTER == "d" and last_move.piece.is_enraged and \
+                        last_move.piece.still_has_to_move is False and \
+                        last_move.piece.cage is None and last_move.broken_cage is None:
+            last_move.piece.still_has_to_move = True
+
+        elif last_move.piece.LETTER == "d" and last_move.piece.still_has_to_move is True:
+            last_move.piece.still_has_to_move = False
+        else:
+            assert last_move.piece.color is not self.turn
 
         self.board.undo(last_move)
 
@@ -161,7 +195,3 @@ class ChessGame:
         # Next turn, updating valid moves
         self.turn = last_move.piece.color
         self.board.update_pieces_vm()
-
-
-
-

@@ -1,14 +1,19 @@
 
 
+# BAOPIG TODOs :
+# Remove print("baopig from WIP")
+
+
 import os
 os.chdir(os.path.dirname(os.path.realpath(__file__)))  # executable from console
 # import sys
 # sys.path.insert(0, 'C:\\Users\\symrb\\Documents\\python\\baopig')
 import baopig as bp
 load = bp.image.load
-from scenes import ChessScene, IratusScene, MenuScene
-from chessgame import ChessGame
-from iratusgame import IratusGame
+from scenes import MenuScene, GameScene
+from game import Game
+from chessboard import ChessBoard
+from iratusboard import IratusBoard
 
 
 iratus_theme = bp.Theme()
@@ -21,19 +26,17 @@ class IratusApp(bp.Application):
 
     def __init__(self):
 
-        bp.Application.__init__(self, theme=iratus_theme)
+        bp.Application.__init__(self, theme=iratus_theme, size=(960, 640))
 
-        self.set_default_size((960, 640))
-
-        self.images = {"chessboard": load("Images/" + "chessboard.png"),
-                       "iratusboard": load("Images/" + "iratusboard.png")}
+        self.images = {"chessboard": load("Images/chessboard.png"),
+                       "iratusboard": load("Images/iratusboard.png")}
 
         for p in ("p", "r", "n", "b", "q", "k") + ("d", "ed", "l", "t", "c", "s"):
             for c in ("w", "b"):
                 self.images[c+p] = load("Images/"+c+p+".png")
 
-        self.iratus_scene = IratusScene(self)
-        self.chess_scene = ChessScene(self)
+        self.iratus_scene = GameScene(self, board_class=IratusBoard, name="IratusScene")
+        self.chess_scene = GameScene(self, board_class=ChessBoard, name="ChessScene")
         self.menu_scene = MenuScene(self)
 
         self.quit_game_dialog = bp.Dialog(self, title="Do you really want to quit this game ?",
@@ -45,16 +48,9 @@ class IratusApp(bp.Application):
 
     current_game = property(lambda self: self.focused_scene.current_game)
 
-    def react_quit_game_dialog(self, ans):
-        if ans == "Yes":
-            self.new_game()
+    def new_game(self):  # TODO : a better game management -> close ?
 
-    def new_game(self):  # TODO : a better game management
-
-        if self.focused_scene is self.chess_scene:
-            self.focused_scene.current_game = ChessGame(self)
-        elif self.focused_scene is self.iratus_scene:
-            self.focused_scene.current_game = IratusGame(self)
+        self.focused_scene.current_game = Game(self.focused_scene)
 
 
 iratus_app = IratusApp()
