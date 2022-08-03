@@ -1,6 +1,7 @@
 
 
 import baopig as bp
+from board import Board
 from piece import Piece, PieceWidget, file_dict
 from trap import Trap, TrapWidget, CageWidget
 from pawn import IPawn
@@ -14,28 +15,13 @@ from queen import Queen
 from king import King
 
 
-class IratusBoard:
+class IratusBoard(Board):
 
     def __init__(self, game):
 
-        # Game is the turn, time, history and winning manager
-        self.game = game
+        Board.__init__(self, game, nbranks=10)
 
-        # _squares is the board storage
-        # If a square is empty, then _squares[square.id] returns 0
-        # If a square is filled with a piece, it returns the piece
-        self._squares = [0] * 80
-
-        # All the pieces, captured and on the board ones
-        self.pieces = ()
-        self.set = {"w": (), "b": ()}
-
-        # List of all the square
-        # TODO : remove ? is it only used by assertions ?
-        self.nbranks = 10
-        self.existing_squares = ()
-        for col in range(0, 71, 10):
-            self.existing_squares += tuple(range(col+0, col+self.nbranks))
+    def _create_pieces(self):
 
         # Creating pieces
         for square in range(2, 73, 10):
@@ -60,50 +46,9 @@ class IratusBoard:
         self.queen = {"b": (Queen(self, "b", 31),), "w": (Queen(self, "w", 38),)}
         self.king = {"b": King(self, "b", 41), "w": King(self, "w", 48)}
 
-        # The display is done by a different object
-        # Every board doesn't have a display (calculation boards for example)
-        self.display = None
-
-        # Used by displayed boards for calculations
-        self.calculator = None
-
-        self.ed_secondmove = None
-
-    def __getitem__(self, item):
-
-        return self._squares[item]
-
-    def __setitem__(self, key, value):
-
-        if value != 0:
-
-            assert isinstance(value, Piece), value
-            if self._squares[value.square] is not value:
-                try:
-                    index = self._squares.index(value)
-                    self._squares[index] = 0
-                except ValueError:
-                    pass
-
-            value.square = key
-
-        self._squares[key] = value
-
-    def add(self, piece):
-
-        assert isinstance(piece, Piece)
-        self._squares[piece.square] = piece  # only time we directly use self._squares
-        self.pieces += (piece,)
-        self.set[piece.color] += (piece,)
-
     def get_position(self):
 
         return IratusBoardPosition(self, self.game.turn)
-
-    @staticmethod
-    def has_square(x, y):
-
-        return 0 <= x < 8 and 0 <= y < 10
 
     def init_display(self, scene):
 
@@ -404,9 +349,6 @@ class IratusBoardPosition:
         self.turn = turn
 
     def __eq__(self, other):
-
-        # TODO : according to FIDE rules, should check if en passant abilities are the same
-        # NOTE : not saving the very first position, but should ideally save it for repetition ckecks (not very usefull)
 
         return self.squares == other.squares and \
                 self.castle_rights == other.castle_rights and \

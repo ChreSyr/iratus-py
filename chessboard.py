@@ -1,6 +1,7 @@
 
 
 import baopig as bp
+from board import Board
 from piece import Piece, PieceWidget, file_dict
 from pawn import Pawn
 from knight import Knight
@@ -10,46 +11,20 @@ from queen import Queen
 from king import King
 
 
-class ChessBoard:
+class ChessBoard(Board):
 
     def __init__(self, game):
 
-        # Game is the turn, time, history and winning manager
-        self.game = game
+        Board.__init__(self, game, nbranks=8)
 
-        # _squares is the board storage
-        # If a square is empty, then _squares[square.id] returns 0
-        # If a square is filled with a piece, it returns the piece
-        self._squares = [0] * 80
-
-        # All the pieces, captured and on the board ones
-        self.pieces = ()
-        self.set = {"w": (), "b": ()}
-
-        # List of all the square
-        # TODO : remove ? is it only used by assertions ?
-        self.nbranks = 8
-        self.existing_squares = ()
-        for col in range(0, 71, 10):
-            self.existing_squares += tuple(range(col+0, col+self.nbranks))
+    def _create_pieces(self):
 
         # Creating pieces
         self.king = {}
         for square in range(1, 72, 10):
             Pawn(self, "b", square)
-        # Knight(self, "b", 10), Knight(self, "b", 60)
-        # Bishop(self, "b", 20), Bishop(self, "b", 50)
-        # Rook(self, "b", 0), Rook(self, "b", 70)
-        # Queen(self, "b", 30)
-        # self.king["b"] = King(self, "b", 40)
         for square in range(6, 77, 10):
             Pawn(self, "w", square)
-        # Knight(self, "w", 17), Knight(self, "w", 67)
-        # Bishop(self, "w", 27), Bishop(self, "w", 57)
-        # Rook(self, "w", 7), Rook(self, "w", 77)
-        # Queen(self, "w", 37)
-        # self.king["w"] = King(self, "w", 47)
-
         self.knight = {"b": (Knight(self, "b", 10), Knight(self, "b", 60)),
                        "w": (Knight(self, "w", 17), Knight(self, "w", 67))}
         self.bishop = {"b": (Bishop(self, "b", 20), Bishop(self, "b", 50)),
@@ -59,45 +34,9 @@ class ChessBoard:
         self.queen = {"b": (Queen(self, "b", 30),), "w": (Queen(self, "w", 37),)}
         self.king = {"b": King(self, "b", 40), "w": King(self, "w", 47)}
 
-        # The display is done by a different object
-        # Every board doesn't have a display (calculation boards for example)
-        self.display = None
-
-        # Used by displayed boards for calculations
-        self.calculator = None
-
-    def __getitem__(self, item):
-
-        return self._squares[item]
-
-    def __setitem__(self, key, value):
-
-        if value != 0:
-
-            try:
-                index = self._squares.index(value)
-                self._squares[index] = 0
-            except ValueError: pass
-
-            assert isinstance(value, Piece), value
-            value.square = key
-        self._squares[key] = value
-
-    def add(self, piece):
-
-        assert isinstance(piece, Piece)
-        self._squares[piece.square] = piece  # only time we directly use self._squares
-        self.pieces += (piece,)
-        self.set[piece.color] += (piece,)
-
     def get_position(self):
 
         return ChessBoardPosition(self, self.game.turn)
-
-    @staticmethod
-    def has_square(x, y):
-
-        return 0 <= x < 8 and 0 <= y < 8
 
     def init_display(self, scene):
 
@@ -229,6 +168,8 @@ class ChessBoardPosition:
 
     def __eq__(self, other):
 
+        # TODO : according to FIDE rules, I should check if en passant abilities are the same
+        # NOTE : not saving the very first position, but should ideally save it for repetition ckecks (not very usefull)
         return self.squares == other.squares and \
                 self.castle_rights == other.castle_rights and \
                 self.turn == other.turn
@@ -267,7 +208,7 @@ class ChessBoardDisplay(bp.Zone):
         self.square_size = 80
 
         bp.Zone.__init__(self, scene, size=(self.square_size * 8, self.square_size * 8),
-                         background_image=self.application.images["chessboard"], sticky="center")
+                         background_image=scene.application.images["chessboard"], sticky="center")
 
         self.board = board
 
@@ -303,9 +244,11 @@ class ChessBoardDisplay(bp.Zone):
 
         def promote(ans):
             self.pawn_to_promote.promote(eval(ans))
-        self.promotion_dialog.signal.ANSWERED.add_command(promote)
+        self.promotion_dialog.signal.ANSWERED.connect(promote, owner=None)
 
         self.orientation = "w"
+
+        self.all_piecewidgets = []
 
     def flip(self):
 
@@ -333,7 +276,7 @@ class ChessBoardDisplay(bp.Zone):
         if widget.is_asleep:
             return  # occurs when a piece is captured : the selection signal is emitted right after it falls asleep
 
-        self._selection_square.set_pos(topleft=widget.topleft)
+        self._selection_square.set_pos(topleft=widget.rect.topleft)
         self._selection_square.show()
         self.selected_piece = widget
 
