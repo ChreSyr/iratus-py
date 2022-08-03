@@ -1,7 +1,7 @@
 
 
 import baopig as bp
-from board import Board, VM_Watermark
+from board import Board, BoardPosition, VM_Watermark
 from piece import Piece, PieceWidget, file_dict
 from pawn import Pawn
 from knight import Knight
@@ -36,7 +36,7 @@ class ChessBoard(Board):
 
     def get_position(self):
 
-        return ChessBoardPosition(self, self.game.turn)
+        return BoardPosition(self, self.game.turn)
 
     def init_display(self, scene):
 
@@ -148,31 +148,6 @@ class ChessBoard(Board):
                 self.calculator.undo(history_element)
 
             piece.valid_moves = tuple(valid_moves)
-
-
-class ChessBoardPosition:
-    """
-    Saves a chess position in a final object
-    """
-
-    def __init__(self, board, turn):
-
-        self.squares = [0] * 80
-
-        for piece in board.pieces:
-            if not piece.is_captured:
-                self.squares[piece.square] = piece.LETTER
-        self.castle_rights = {"w": board.king["w"].castle_rights.copy(),
-                              "b": board.king["b"].castle_rights.copy()}
-        self.turn = turn
-
-    def __eq__(self, other):
-
-        # TODO : according to FIDE rules, I should check if en passant abilities are the same
-        # NOTE : not saving the very first position, but should ideally save it for repetition ckecks (not very usefull)
-        return self.squares == other.squares and \
-                self.castle_rights == other.castle_rights and \
-                self.turn == other.turn
 
 
 class ChessBoardCalculator(ChessBoard):

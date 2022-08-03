@@ -1,7 +1,7 @@
 
 
 import baopig as bp
-from board import Board, VM_Watermark
+from board import Board, BoardPosition, VM_Watermark
 from piece import Piece, PieceWidget, file_dict
 from trap import Trap, TrapWidget, CageWidget
 from pawn import IPawn
@@ -326,34 +326,16 @@ class IratusBoard(Board):
             piece.valid_moves = tuple(valid_moves)
 
 
-class IratusBoardPosition:
-    """
-    Saves a chess position in a final object
-    """
+class IratusBoardPosition(BoardPosition):
 
     def __init__(self, board, turn):
 
-        self.squares = [0] * 80
-
-        for piece in board.pieces:
-            if not piece.is_captured:
-                self.squares[piece.square] = piece.LETTER
-        self.castle_rights = {
-            "w": board.king["w"].castle_rights.copy(),
-            "b": board.king["b"].castle_rights.copy()
-        }
+        BoardPosition.__init__(self, board, turn)
         self.traps = {
             "w": tuple((wtrap.square, wtrap.state) for wtrap in board.trap["w"]),
             "b": tuple((btrap.square, btrap.state) for btrap in board.trap["b"])
         }
-        self.turn = turn
-
-    def __eq__(self, other):
-
-        return self.squares == other.squares and \
-                self.castle_rights == other.castle_rights and \
-                self.traps == other.traps and \
-                self.turn == other.turn
+        self._eq_attributes += ("traps",)
 
 
 class IratusBoardCalculator(IratusBoard):

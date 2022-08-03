@@ -98,6 +98,31 @@ class Board:
         raise NotImplemented
 
 
+class BoardPosition:
+    """ Store a chess position in a final object """
+
+    def __init__(self, board, turn):
+
+        self.squares = [0] * 80
+
+        for piece in board.pieces:
+            if not piece.is_captured:
+                self.squares[piece.square] = piece.LETTER
+        self.castle_rights = {"w": board.king["w"].castle_rights.copy(),
+                              "b": board.king["b"].castle_rights.copy()}
+        self.turn = turn
+        self._eq_attributes = ("squares", "castle_rights", "turn")
+
+    def __eq__(self, other):
+
+        # TODO : according to FIDE rules, I should check if en passant abilities are the same
+
+        for attr in self._eq_attributes:
+            if getattr(self, attr) != getattr(other, attr):
+                return False
+        return True
+
+
 class VM_Watermark:
 
     def __init__(self, board, square):

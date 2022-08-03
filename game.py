@@ -30,6 +30,9 @@ class Game:
         # Initializing board and pieces display
         self.board.init_display(scene)
 
+        # Store the first position
+        self.fat_history.append(self.board.get_position())
+
     def check_for_end(self):
 
         # Draw by 50-moves rule
