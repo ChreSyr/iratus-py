@@ -2,6 +2,7 @@
 
 # BAOPIG TODOs :
 # Remove print("baopig from WIP")
+# Dialog.handle_answer(answer)
 
 
 import os
@@ -22,6 +23,16 @@ iratus_theme.set_style_for(bp.Text, font_file="pierceroman", font_height=30, fon
 iratus_theme.set_style_for(bp.DialogFrame, pos=("50%", 10), loc="midtop", width="90%")
 
 
+class QuitGameDialog(bp.Dialog):
+
+    def __init__(self, app):
+        bp.Dialog.__init__(self, app, title="Do you really want to quit this game ?", choices=("Yes", "Nope"))
+
+    def handle_answer(self, answer):
+        if answer == "Yes":
+            self.application.new_game()
+
+
 class IratusApp(bp.Application):
 
     def __init__(self):
@@ -39,12 +50,7 @@ class IratusApp(bp.Application):
         self.chess_scene = GameScene(self, board_class=ChessBoard, name="ChessScene")
         self.menu_scene = MenuScene(self)
 
-        self.quit_game_dialog = bp.Dialog(self, title="Do you really want to quit this game ?",
-                                          choices=("Yes", "Nope"))
-        def answer(ans):
-            if ans == "Yes":
-                self.new_game()
-        self.quit_game_dialog.signal.ANSWERED.connect(answer, owner=None)
+        self.quit_game_dialog = QuitGameDialog(self)
 
     current_game = property(lambda self: self.focused_scene.current_game)
 
