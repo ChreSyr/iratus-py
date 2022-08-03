@@ -59,14 +59,13 @@ class GameButtonsZone(bp.Zone):
         bp.Button(self, text="Flip board", row=4, loc="center", command=flip)
 
         def print_game():
-            game = self.scene.application.current_game
-            game_str = ""
-            for move in game.history:
+            moves = []
+            for move in self.scene.application.current_game.history:
                 try:
-                    game_str += move.notation + " "
+                    moves.append(move.notation)
                 except AttributeError:
                     pass
-            bp.Dialog(self.application, title="Current game :", description=game_str, choices=("Thanks",),
+            bp.Dialog(self.application, title="Current game :", description=' '.join(moves), choices=("Thanks",),
                       one_shot=True).open()
         bp.Button(self, text="Print game", row=5, loc="center", command=print_game)
 
