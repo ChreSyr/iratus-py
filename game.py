@@ -36,9 +36,10 @@ class Game:
     def check_for_end(self):
 
         # Draw by 50-moves rule
-        if self.history[-1].piece.LETTER == "p":
+        last_move = self.history[-1]
+        if self.board[last_move.end_square].LETTER == "p":
             self.counter50rule = 0
-        elif self.history[-1].capture != 0:
+        elif last_move.captures:
             self.counter50rule = 0
         else:
             self.counter50rule += 1
@@ -93,25 +94,17 @@ class Game:
         else:
             return "stalemate"
 
-    def move(self, piece, square):
+    def move(self, start_square, end_square):
 
+        piece = self.board[start_square]
         assert piece.color is self.turn
 
-        self.history.append(self.board.move(piece, square))  # piece, old_square, square, captured_piece
+        move = self.board.move(start_square, end_square)
+        self.history.append(move)  # piece, old_square, square, captured_piece
 
         # Next turn
         # For the color who just played, we need to update the antiking squares
-        self.turn = piece.enemy_color
-
-        # Enraged dog exception
-        # TODO
-        if piece.LETTER == "d" and piece.is_enraged:
-            if piece.cage is None:
-                piece.still_has_to_move = not piece.still_has_to_move
-                if piece.still_has_to_move:
-                    self.turn = piece.color
-            else:  # the dog just got trapped
-                piece.still_has_to_move = False
+        self.turn = move.next_turn
 
         # We need to update the antiking squares for both colors
         self.board.update_pieces_vm()
@@ -148,28 +141,19 @@ class Game:
             return
 
         last_undone_move = self.back_history.pop(-1)
+        piece = self.board[last_undone_move.start_square]
 
-        assert last_undone_move.piece.color is self.turn
+        assert piece.color is self.turn
 
         # TODO
         if hasattr(last_undone_move, "unequiped_trap"):
             if last_undone_move.unequiped_trap is not None:
                 last_undone_move.unequiped_trap.trap_widget.hide()  # so the unequipement works
 
-        self.history.append(self.board.move(last_undone_move.piece, last_undone_move.end_square, redo=last_undone_move))
+        self.board.redo(last_undone_move)
+        self.history.append(last_undone_move)
 
-        self.turn = last_undone_move.piece.enemy_color
-
-        # Enraged dog exception
-        # TODO
-        piece = last_undone_move.piece
-        if piece.LETTER == "d" and piece.is_enraged:
-            if piece.cage is None and last_undone_move.broken_cage is None:
-                piece.still_has_to_move = not piece.still_has_to_move
-                if piece.still_has_to_move:
-                    self.turn = piece.color
-            else:  # just got trapped
-                piece.still_has_to_move = False
+        self.turn = last_undone_move.next_turn
 
         self.board.update_pieces_vm()
 
@@ -188,24 +172,13 @@ class Game:
         self.fat_history.pop(-1)
         self.back_history.append(last_move)
 
-        # TODO
-        if last_move.piece.LETTER == "d" and last_move.piece.is_enraged and \
-                        last_move.piece.still_has_to_move is False and \
-                        last_move.piece.cage is None and last_move.broken_cage is None:
-            last_move.piece.still_has_to_move = True
-
-        elif last_move.piece.LETTER == "d" and last_move.piece.still_has_to_move is True:
-            last_move.piece.still_has_to_move = False
-        else:
-            assert last_move.piece.color is not self.turn
-
         self.board.undo(last_move)
 
-        if self.fat_history:
-            position = self.fat_history[-1]
-            for color, king in self.board.king.items():
-                king.castle_rights = position.castle_rights[color]
+        # if self.fat_history:
+        #     position = self.fat_history[-1]
+        #     for color, king in self.board.king.items():
+        #         king.castle_rights = position.castle_rights[color]
 
         # Next turn, updating valid moves
-        self.turn = last_move.piece.color
+        self.turn = last_move.turn
         self.board.update_pieces_vm()

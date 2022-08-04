@@ -60,8 +60,13 @@ class GameButtonsZone(bp.Zone):
 
         def print_game():
             moves = []
+            turn_number = 0
             for move in self.scene.application.current_game.history:
                 try:
+                    new_turn_number = int(move.turn_number)
+                    if new_turn_number != turn_number:
+                        turn_number = new_turn_number
+                        moves.append(str(turn_number) + ".")
                     moves.append(move.notation)
                 except AttributeError:
                     pass

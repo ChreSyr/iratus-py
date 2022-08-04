@@ -28,8 +28,7 @@ class Pawn(Piece):
     def go_to(self, square, promotion=None):
 
         if self.promotion is not None:
-            self.promotion.go_to(self, square)
-            return
+            return self.promotion.go_to(self, square)
 
         super().go_to(square)
 
@@ -42,6 +41,15 @@ class Pawn(Piece):
             elif self.widget is not None:
                 self.board.display.pawn_to_promote = self
                 self.board.display.promotion_dialog.open()
+
+        stepback = 1 if self.color == "w" else -1
+        piece_behind = self.board[self.square + stepback]
+        if piece_behind != 0 and piece_behind.color != self.color and piece_behind.LETTER == "p":
+            last_move = self.board.game.history[-1]
+            if self.board[last_move.end_square] is piece_behind and \
+                    abs(last_move.start_square - last_move.end_square) == 2:
+                en_passant = "capture", piece_behind
+                return en_passant,
 
     def undo(self, move):
 
@@ -160,8 +168,8 @@ class Pawn(Piece):
                     piece_aside = self.board[self.square + dx * 10]
                     if piece_aside is not 0 and piece_aside.LETTER == "p" and piece_aside.color != self.color:
                         last_move = self.board.game.history[-1]
-                        if last_move.piece is piece_aside and \
-                                        abs(last_move.start_square - last_move.end_square) is 2:
+                        if self.board[last_move.end_square] is piece_aside and \
+                                abs(last_move.start_square - last_move.end_square) is 2:
                             self.valid_moves += (d,)
 
 
@@ -176,10 +184,7 @@ class IPawn(Pawn):  # Pawns for iratus
         # ENRAGED DOG attributes
         self.leash = None
         self.is_leashed = False
-        self.is_enraged = True
         self._still_has_to_move = False
-        self.calm_moves = self.moves
-        self.enraged_moves = ((1, 0), (0, 1), (-1, 0), (0, -1))
 
     def _set_still_has_to_move(self, value):
 
@@ -256,8 +261,8 @@ class IPawn(Pawn):  # Pawns for iratus
                     piece_aside = self.board[self.square + dx * 10]
                     if piece_aside is not 0 and piece_aside.LETTER == "p" and piece_aside.color != self.color:
                         last_move = self.board.game.history[-1]
-                        if last_move.piece is piece_aside and \
-                                        abs(last_move.start_square - last_move.end_square) is 2:
+                        if self.board[last_move.end_square] is piece_aside and \
+                                abs(last_move.start_square - last_move.end_square) is 2:
                             self.valid_moves += (d,)
 
                 elif piece_on_attainable_square.color != self.color:

@@ -49,87 +49,6 @@ class ChessBoard(Board):
 
         self.calculator = ChessBoardCalculator(self)
 
-    def move(self, piece, square, redo=None):
-        """
-        Moves a piece on a square, removes captured pieces
-        Should only be called by the game
-        :param piece: a Piece
-        :param square: an integer
-        :param redo: the move who is copied
-        """
-
-        assert piece.board is self
-
-        old_square = piece.square
-        captured_piece = self[square]
-        rook_castle = None
-        en_passant = None
-
-        # En passant
-        if captured_piece == 0 and piece.LETTER == "p":
-            stepback = 1 if piece.color == "w" else -1
-            piece_behind = self[square + stepback]
-            if piece_behind != 0 and piece_behind.color != piece.color and piece_behind.LETTER == "p":
-                last_move = self.game.history[-1]
-                if last_move.piece is piece_behind and abs(last_move.start_square - last_move.end_square) == 2:
-                    self[piece_behind.square] = 0
-                    captured_piece = piece_behind
-                    en_passant = piece_behind.square
-
-        # If it was a piece
-        # if captured_piece is not 0:
-        if isinstance(captured_piece, Piece):
-            assert captured_piece.board is self
-            try:
-                assert captured_piece.color != piece.color  # Chess pieces can't capture each other
-            except AssertionError:
-                print(2)
-            captured_piece.capture()
-
-        # Castling
-        if piece.LETTER == "k":
-            if piece.castle_rights[2] is False:
-                file = square // 10
-                if file in (2, 6):
-                    if file == 6:
-                        rook_castle = self.move(self[square + 10], square - 10)
-                    else:
-                        rook_castle = self.move(self[square - 20], square + 10)
-
-        # Memorizing the new position for the game
-        self[old_square] = 0
-        self[square] = piece
-
-        if redo is not None and redo.promotion is not None:
-            piece.go_to(square, redo.promotion)
-        else:
-            piece.go_to(square)
-
-        # Return informations for the game history
-        return MoveForHistoric(self.game, piece, old_square, square, captured_piece, rook_castle, en_passant)
-
-    def undo(self, move):
-
-        assert move.piece.board is self
-
-        if move.rook_castle is not None:
-            assert move.piece.LETTER == "k"
-            self.undo(move.rook_castle)
-
-        self[move.start_square] = move.piece
-        self[move.end_square] = move.capture
-        move.piece.undo(move)
-
-        if move.en_passant is not None:
-            assert move.capture.LETTER == "p"
-            self[move.en_passant] = move.capture
-        else:
-            self[move.end_square] = move.capture
-
-        if move.capture != 0:
-            assert move.capture.board is self
-            move.capture.uncapture()
-
     def update_pieces_vm(self):
 
         for piece in self.pieces:
@@ -140,7 +59,7 @@ class ChessBoard(Board):
             cloned_piece = self.calculator.get_simulated_piece(piece)
             valid_moves = []  # moves who don't leave the king in check
             for move in piece.valid_moves:
-                history_element = self.calculator.move(cloned_piece, piece.square + move)
+                history_element = self.calculator.move(cloned_piece.square, piece.square + move)
                 for enemy_cloned_piece in self.calculator.set[cloned_piece.enemy_color]:
                     enemy_cloned_piece.update_valid_moves()
                 if not self.calculator.king[piece.color].in_check:
@@ -166,10 +85,7 @@ class ChessBoardCalculator(ChessBoard):
 
         self._squares = [0] * 80
         for piece, clone_piece in self.pieces_correspondence.items():
-            clone_piece.is_captured = piece.is_captured
-            if not clone_piece.is_captured:
-                self[piece.square] = clone_piece
-                clone_piece.go_to(piece.square)
+            clone_piece.copy(piece)
 
     def get_simulated_piece(self, piece):
 

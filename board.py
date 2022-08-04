@@ -1,6 +1,6 @@
 
 import baopig as bp
-from piece import Bonus, Piece, PieceWidget
+from piece import Bonus, Piece, PieceWidget, file_dict
 
 
 class Board:
@@ -26,6 +26,8 @@ class Board:
         self.existing_squares = ()
         for col in range(0, 71, 10):
             self.existing_squares += tuple(range(col+0, col+self.nbranks))
+
+        self.current_move = None
 
         self._create_pieces()
 
@@ -86,16 +88,62 @@ class Board:
         """ Initialize a display dedicated to this board """
         raise NotImplemented
 
-    def move(self, piece, square, redo=None):
-        """
-        Moves a piece on a square, removes captured pieces
-        Should only be called by the game
-        """
-        raise NotImplemented
+    def move(self, start_square, end_square):
+        """ Should only be called by the game """
+
+        move = Move(self, start_square, end_square)
+        self.current_move = move
+        piece = self[start_square]
+
+        move.execute_commands(piece.go_to(move.end_square))
+        move.init_notation()
+
+        return move
+
+    def redo(self, move):
+
+        self.current_move = move
+        piece = self[move.start_square]
+
+        for capture in move.captures:
+            capture.capture(piece)
+
+        for before_move in move.before_moves:
+            self.redo(before_move)
+
+        piece.go_to(move.end_square)
+
+        for after_move in move.after_moves:
+            self.redo(after_move)
+
+        for transformation in move.transformations:
+            # square = transformation[0]
+            # piece = self[square]
+            # new_class = transformation[2]
+            # piece.transform(new_class)
+            self[transformation[0]].transform(transformation[2])
 
     def undo(self, move):
-        """ Undo the last move TODO : remove the parameter """
-        raise NotImplemented
+        """ Undo the last move """
+
+        for transformation in move.transformations:
+            # square = transformation[0]
+            # piece = self[square]
+            # old_class = transformation[1]
+            # piece.transform(old_class)
+            self[transformation[0]].transform(transformation[1])
+
+        for after_move in move.after_moves:
+            self.undo(after_move)
+
+        # piece = self[move.end_square]
+        self[move.end_square].undo(move)
+
+        for before_move in move.before_moves:
+            self.undo(before_move)
+
+        for capture in move.captures:
+            capture.uncapture()
 
     def update_pieces_vm(self):
         """ Update the valid moves of all the remaining pieces """
@@ -205,7 +253,9 @@ class BoardDisplay(bp.Zone):
                     if pw in swapped:
                         continue
                     try:
+                        # TODO : no piece change, only a visual change
                         pw.piece.go_to(pw.piece.square)
+                        raise NotImplemented
                     except PermissionError:
                         pw2 = self.board[69 + self.board.nbranks - pw.piece.square].widget
                         self.pieces_layer.swap(pw, pw2)
@@ -263,11 +313,142 @@ class BoardDisplay(bp.Zone):
         for vm_watermark in self.visible_vm_watermarks:
             if vm_watermark.collidemouse():
                 if self.orientation == "w":
-                    self.board.game.move(widget.piece, vm_watermark.square)
+                    self.board.game.move(widget.piece.square, vm_watermark.square)
                 else:
-                    self.board.game.move(widget.piece, 69 + self.board.nbranks - vm_watermark.square)
+                    self.board.game.move(widget.piece.square, 69 + self.board.nbranks - vm_watermark.square)
             vm_watermark.hide()
         self.visible_vm_watermarks.clear()
+
+
+class Move:
+
+    def __init__(self, board, start_square, end_square):
+
+        self.board = board
+        self.start_square = start_square
+        self.end_square = end_square
+
+        self.trap_equipement = None
+        self.trap_capture = None
+        self.unequiped_trap = None
+        self.destroyed_trap = None
+        self.broken_cage = None
+
+        self.promotion = None
+
+        self.before_moves = []
+        self.after_moves = []
+        self.captures = []
+        self.transformations = []
+        self.notation = None
+        self.turn = board[start_square].color
+        self.next_turn = board[start_square].enemy_color
+        self.turn_number = 1
+
+        if self.board.game.history:
+            last_move = self.board.game.history[-1]
+            self.turn_number = last_move.turn_number
+            if last_move.turn != self.turn:
+                self.turn_number += .5
+
+        capture = board[end_square]
+        if capture != 0:
+            self.captures.append(capture)
+            self.execute_commands(capture.capture(board[start_square]))
+
+    # piece = property(lambda self: self.board[self.start_square])
+    # capture = property(lambda self: self.board[self.end_square])
+
+    def execute_commands(self, commands):
+
+        if commands is None:
+            return
+
+        for command, *args in commands:
+            if command == "after_move":
+                self.after_moves.append(self.board.move(args[0], args[1]))
+            elif command == "before_move":
+                self.before_moves.append(self.board.move(args[0], args[1]))
+            elif command == "capture":
+                self.captures.append(args[0])
+                self.execute_commands(args[0].capture(None))
+            elif command == "notation":
+                self.notation = args[0]
+            elif command == "set_next_turn":
+                self.next_turn = args[0]
+            elif command == "transform":
+                piece = args[0]
+                square = piece.square
+                old_class = piece.__class__
+                new_class = args[1]
+                transformation = square, old_class, new_class
+                self.transformations.append(transformation)
+                piece.transform(new_class)
+            elif command == "uncapture":
+                self.captures.remove(args[0])
+            else:
+                raise ValueError(command)
+
+    def init_notation(self):
+        """ Called after the move is applied """
+
+        if self.notation is not None:
+            return
+
+        n = ""
+        piece = self.board[self.end_square]
+
+        # the name of the piece, not for pawns
+        if piece.LETTER != "p":
+            n += piece.LETTER.capitalize()
+
+        # When two allied knights, rooks or queens could have jump on this square
+        for thing in (("n", self.board.knight), ("r", self.board.rook), ("q", self.board.queen)):
+            if piece.LETTER == thing[0]:
+                allies = []  # allies of same type who also could have make the move
+                for piece2 in thing[1][piece.color]:
+                    if piece2 is not piece:
+                        for move in piece2.valid_moves:
+                            if self.end_square is piece2.square + move:
+                                allies.append(piece2)
+                if len(allies) == 1:
+                    if self.start_square // 10 is allies[0].square // 10:
+                        # They are on the same file, so we indiquate the rank
+                        n += str(10 - self.start_square % 10)
+                    else:
+                        # They are not on the same file
+                        n += file_dict[self.start_square // 10]
+                elif len(allies) > 1:
+                    same_file = same_rank = False
+                    for ally in allies:
+                        if ally.file is self.start_square // 10:
+                            same_file = True
+                        if ally.rank is self.start_square % 10:
+                            same_rank = True
+                    if same_file is False:
+                        # They are not on the same file
+                        n += file_dict[self.start_square // 10]
+                    elif same_rank is False:
+                        # They are on the same file, but not on the same rank
+                        n += str(10 - self.start_square % 10)
+                    else:
+                        # There is at least one on the same rank and one on the same file
+                        # NOTE : handles when 3 queens can go on the same square
+                        n += file_dict[self.start_square // 10] + str(10 - self.start_square % 10)
+
+        # When two allied dogs could have jumped on this square
+        # TODO
+
+        if len(self.captures) != 0:
+
+            # When a pawn captures something, we write its origin file
+            if piece.LETTER == "p":
+                n += file_dict[self.start_square // 10]
+            n += "x"
+
+        n += piece.coordinates
+
+        self.notation = n
 
 
 class VM_Watermark:

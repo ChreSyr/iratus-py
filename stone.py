@@ -8,9 +8,18 @@ class Stone(Piece):
     LETTER = "s"
     moves = ((-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1))
 
-    def __init__(self, *args, **kwargs):
+    def capture(self, capturer):
 
-        Piece.__init__(self, *args, **kwargs)
+        start_square = capturer.square
+        assert start_square != self.square
+
+        roll = self.roll(self.square // 10 - start_square // 10, self.square % 10 - start_square % 10)
+        if roll:  # The stone has not been ejected
+            # print("Stone roll : from {} to {}".format(square, captured_piece.square))
+            return roll
+
+        else:
+            super().capture(capturer)
 
     def roll(self, dx, dy):
 
@@ -44,7 +53,11 @@ class Stone(Piece):
                 rolling_square = None
 
         if rolling_square is not None:
-            return self.board.move(self, rolling_square)
+            roll = "before_move", self, rolling_square
+            uncapture = "uncapture", self
+            return roll, uncapture
+
+            # return self.board.move(self, rolling_square)
 
     def update_valid_moves(self):
 

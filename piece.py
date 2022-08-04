@@ -15,11 +15,63 @@ class Bonus:
 
         self.board.add(self)
 
+    def move(self):
+
+        if piece.trap is not None and piece.trap.trap_widget.is_hidden:
+            move.unequiped_trap = piece.trap
+            piece.trap.trap_widget.show()
+            piece.unequip()
+
+        # Trap stuff
+        if piece.bonus is None:
+            # Trap equipement
+            for bonus in self.bonus[piece.color]:
+                if bonus.ally is None and bonus.square == move.end_square:
+                    piece.equip(bonus)
+                    move.trap_equipement = True
+        else:
+            piece.bonus.move(move.end_square)
+
+    def undo(self):
+
+        if move.trap_equipement is True:
+            assert piece.trap is not None
+            piece.unequip()
+
+        if move.trap_capture is True:
+            assert piece.cage is not None
+            piece.cage.untrap()
+
+        if move.broken_cage is not None:
+            assert move.capture.LETTER == "s"
+            move.capture, piece = piece, move.capture
+            move.broken_cage.unrelease(move.capture)
+            # self[move.start_square] = piece
+            piece.uncapture()
+
+        ...
+
+        if piece.trap is not None:
+            piece.trap.move(move.start_square)
+
+        if move.destroyed_trap is not None:
+            assert piece.LETTER == "l"
+            move.destroyed_trap.undestroy()
+            if move.capture != 0:
+                move.capture.equip(move.destroyed_trap)
+
+        if move.unequiped_trap is not None:
+            assert move.unequiped_trap.square is piece.square
+            piece.equip(move.unequiped_trap)
+
 
 class Piece:
 
     LETTER = None
     moves = ()
+
+    SubPieceAttributes = ("moves", "LETTER")
+    SubPieceMethods = ("capture", "go_to", "uncapture", "undo", "update_valid_moves")
 
     def __init__(self, board, color, square):
 
@@ -27,7 +79,7 @@ class Piece:
         self.color = color
         self.enemy_color = "w" if color == "b" else "b"
         self.square = square
-        # board.squares[square] = self  # TODO
+        board[square] = self  # TODO
 
         # valid_moves is a tuple of INTEGERS
         # piece.square + valid_move = new piece.square
@@ -38,6 +90,7 @@ class Piece:
         self.is_captured = False
 
         # for trap attachement
+        self.bonus = None
         self.trap = None  # ally
         self.cage = None  # enemy
         self.is_trapped = False  # should only be modified by Trap objects
@@ -58,14 +111,26 @@ class Piece:
     file = property(lambda self: self.square // 10)
     rank = property(lambda self: self.square % 10)
 
-    def capture(self):
+    def capture(self, capturer):
         # The board call this function when this piece is captured
+
+        # Memorizing the new position for the game
+        assert self.board[self.square] is self
+        self.board[self.square] = 0  # TODO
 
         self.is_captured = True
         self.valid_moves = self.antiking_squares = ()
 
         if self.widget is not None:
             self.widget.sleep()
+
+    def copy(self, original):
+        self.is_captured = original.is_captured
+        if not self.is_captured:
+            self.board[original.square] = self
+            if self.square != original.square:
+                self.go_to(original.square)  # TODO : is it a problem when go_to is overriden ?
+                # Piece.go_to(self, original.square)
 
     def equip(self, trap):
 
@@ -82,7 +147,9 @@ class Piece:
         """
 
         # Memorizing the new position for the game
-        # self.square = square  # TODO
+        assert self.board[self.square] is self
+        self.board[self.square] = 0  # TODO
+        self.board[square] = self  # self.square = square  # TODO
 
         # Memorizing the new position for the display
         if self.widget is not None:
@@ -102,8 +169,25 @@ class Piece:
 
         self.widget = PieceWidget(self)
 
+    def transform(self, piece_class):
+        for attr in piece_class.SubPieceAttributes:
+            setattr(self, attr, getattr(piece_class, attr))
+        for method in piece_class.SubPieceMethods:
+            setattr(self, method, bp.PrefilledFunction(getattr(piece_class, method), self))
+
+        if self.widget is not None:
+            image = self.board.display.application.images[self.color + self.LETTER]
+            image = bp.transform.scale(image, (self.board.display.square_size, self.board.display.square_size))
+            self.widget.set_surface(image)
+
+            self.board.calculator.pieces_correspondence[self].transform(piece_class)
+
     def uncapture(self):
         # The board call this function when this piece was captured but "undo" is done
+
+        # Memorizing the new position for the game
+        assert self.board[self.square] == 0
+        self.board[self.square] = self  # TODO
 
         self.is_captured = False
 
@@ -113,7 +197,7 @@ class Piece:
 
     def undo(self, move):
 
-        assert move.piece is self
+        assert self.board[move.end_square] is self
         self.go_to(move.start_square)
 
     def unequip(self):
@@ -264,12 +348,12 @@ class PieceWidget(bp.Focusable):
         # Allow a selected piece to be unselected when you click on it
         self._was_selected = False
 
-        if piece.LETTER == "d":
-            self.calm_image = image
-            self.enraged_image = bp.transform.scale(
-                piece.board.display.application.images[piece.color+"ed"],
-                (piece.board.display.square_size, piece.board.display.square_size)
-            )
+        # if piece.LETTER == "d":
+        #     self.calm_image = image
+        #     self.enraged_image = bp.transform.scale(
+        #         piece.board.display.application.images[piece.color+"ed"],
+        #         (piece.board.display.square_size, piece.board.display.square_size)
+        #     )
         
         self.piece.board.display.all_piecewidgets.append(self)
 
@@ -325,4 +409,3 @@ class PieceWidget(bp.Focusable):
                 assert self.parent.selected_piece is self
                 self.defocus()
                 return
-

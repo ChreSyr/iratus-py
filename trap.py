@@ -72,8 +72,9 @@ class Trap(Bonus):
         piece.valid_moves = piece.antiking_squares = ()
 
         if piece.LETTER == "d":
+            raise NotImplemented
+            assert piece.is_leashed
             if piece.is_leashed:
-                piece.captured_while_leashed = True
                 piece.leash.capture()
 
         self.state = 1

@@ -15,15 +15,32 @@ class King(Piece):
 
         Piece.__init__(self, *args, **kwargs)
 
-        self.castle_rights = [False, False, False]  # [long castle right, short castle right, has_moved]
+        # [long castle right, short castle right, turn_number_of_first_move]
+        self.castle_rights = [False, False, None]
 
     in_check = property(lambda self: self.square_is_under_check(self.square))
+
+    def copy(self, original):
+
+        super().copy(original)
+        self.castle_rights = original.castle_rights.copy()
 
     def go_to(self, square):
 
         Piece.go_to(self, square)
 
-        self.castle_rights[2] = True
+        if self.castle_rights[2] is None:
+            self.castle_rights[2] = self.board.current_move.turn_number
+
+            file = square // 10
+            if file == 6 and self.castle_rights[1]:
+                rook_castle = "after_move", square + 10, square - 10
+                notation = "notation", "0-0"
+                return rook_castle, notation
+            elif file == 2 and self.castle_rights[0]:
+                rook_castle = "after_move", square - 20, square + 10
+                notation = "notation", "0-0-0"
+                return rook_castle, notation
 
     def square_is_under_check(self, square):
         # if the square is under check, returns True
@@ -53,11 +70,11 @@ class King(Piece):
                 self.antiking_squares += (square,)
 
                 piece_on_attainable_square = self.board[square]
-                if piece_on_attainable_square is 0:
+                if piece_on_attainable_square == 0:
 
                     # if there is an enemy trap on that square, we can't ride it
                     if hasattr(self.board, "trap"):
-                        if True in (trap.state is 0 and trap.square is square
+                        if True in (trap.state == 0 and trap.square is square
                                     for trap in self.board.trap[self.enemy_color]):
                             continue
 
@@ -70,7 +87,7 @@ class King(Piece):
                         if piece_on_attainable_square.trap is None:
                             self.valid_moves += (d,)
 
-        if self.castle_rights[2] is False and not self.in_check:
+        if self.castle_rights[2] is None and not self.in_check:
 
             # castling at right
 
@@ -80,7 +97,7 @@ class King(Piece):
                 can_short_castle = True
                 for move in (10, 20):
                     square = self.square + move
-                    if self.board[square] is not 0 or self.square_is_under_check(square):
+                    if self.board[square] != 0 or self.square_is_under_check(square):
                         can_short_castle = False
                         break
             if can_short_castle:
@@ -95,12 +112,22 @@ class King(Piece):
                 can_long_castle = True
                 for move in (-10, -20):
                     square = self.square + move
-                    if self.board[square] is not 0 or self.square_is_under_check(square):
+                    if self.board[square] != 0 or self.square_is_under_check(square):
                         can_long_castle = False
                         break
-                if self.board[self.square - 30] is not 0:
+                if self.board[self.square - 30] != 0:
                     can_long_castle = False
             if can_long_castle:
                 self.valid_moves += (-20,)
             self.castle_rights[0] = can_long_castle
 
+    def undo(self, move):
+
+        super().undo(move)
+        if move.turn_number == self.castle_rights[2]:
+            assert self.castle_rights[2] is not None
+            self.castle_rights[2] = None
+
+        # start_file = move.start_square // 10
+        # end_file = move.end_square // 10
+        # if abs(start_file - end_file) == 2:
