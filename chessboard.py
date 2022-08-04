@@ -188,6 +188,11 @@ class MoveForHistoric:
         self.rook_castle = rook_castle
         self.en_passant = en_passant
 
+        self.notation = ""
+        self._init_notation(game)
+
+    def _init_notation(self, game):
+
         n = ""
 
         # the name of the piece, not for pawns
@@ -199,7 +204,7 @@ class MoveForHistoric:
             if self.piece.LETTER == thing[0]:
                 allies = []  # allies of same type who also could have make the move
                 for piece2 in thing[1][self.piece.color]:
-                    if piece2 is not piece:
+                    if piece2 is not self.piece:
                         for move in piece2.valid_moves:
                             if self.end_square is piece2.square + move:
                                 allies.append(piece2)
@@ -238,4 +243,11 @@ class MoveForHistoric:
             n += "x"
 
         n += self.piece.coordinates
+
+        if self.rook_castle is not None:
+            if self.rook_castle.piece.square // 10 == 5:
+                n = "0-0"
+            else:
+                n = "0-0-0"
+
         self.notation = n

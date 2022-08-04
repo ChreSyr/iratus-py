@@ -379,6 +379,14 @@ class IratusBoardCalculator(IratusBoard):
 
 
 class MoveForHistoric:
+    """
+    A move consists of :
+        - pieces going from a square A to a square B
+        - pieces captured
+        - pieces transformed into other pieces
+        - bonus applied / unapplied
+
+    """
 
     def __init__(self, game, piece, old_square, square, captured_piece,
                  rook_castle, stone_roll, dog_pull,
@@ -403,10 +411,15 @@ class MoveForHistoric:
         self.wasted_leash2 = wasted_leash2
         self.promotion = promotion
 
+        self.notation = ""
+        self._init_notation(game)
+
+    def _init_notation(self, game):
+
         n = ""
 
         # E for enraged dogs
-        if piece.LETTER == "d" and piece.is_enraged:
+        if self.piece.LETTER == "d" and self.piece.is_enraged:
             n += "E"  # For enraged dog
 
         # the name of the piece, not for pawns
@@ -418,7 +431,7 @@ class MoveForHistoric:
             if self.piece.LETTER == thing[0]:
                 allies = []  # allies of same type who also could have make the move
                 for piece2 in thing[1][self.piece.color]:
-                    if piece2 is not piece:
+                    if piece2 is not self.piece:
                         for move in piece2.valid_moves:
                             if self.end_square is piece2.square + move:
                                 allies.append(piece2)
@@ -444,10 +457,8 @@ class MoveForHistoric:
                         n += str(10 - self.start_square % 10)
                     else:
                         # There is at least one on the same rank and one on the same file
+                        # NOTE : handles when 3 queens can go on the same square
                         n += file_dict[self.start_square // 10] + str(10 - self.start_square % 10)
-
-        # NOTE : some very rare times, there is 3 queens who can go on the same square
-        # does my notation method handles that ?
 
         # When two allied dogs could have jumped on this square
         # TODO
@@ -461,13 +472,10 @@ class MoveForHistoric:
 
         n += self.piece.coordinates
 
-        if rook_castle is not None:
-            if rook_castle.piece.square // 10 == 5:
+        if self.rook_castle is not None:
+            if self.rook_castle.piece.square // 10 == 5:
                 n = "0-0"
             else:
                 n = "0-0-0"
 
-
-
         self.notation = n
-
