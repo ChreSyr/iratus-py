@@ -1,6 +1,6 @@
 
 
-from piece import Piece
+from piece import Piece, PieceMovingTwice
 
 
 class Dog(Piece):
@@ -14,20 +14,7 @@ class Dog(Piece):
 
         self.leash = None
 
-        self._still_has_to_move = False
-
     is_leashed = property(lambda self: (self.leash is not None) and (not self.leash.is_captured))
-
-    def _set_still_has_to_move(self, value):
-
-        assert bool(value) is value
-
-        self._still_has_to_move = value
-        if value is True:
-            self.board.ed_secondmove = self
-        elif self.board.ed_secondmove is self:
-            self.board.ed_secondmove = None
-    still_has_to_move = property(lambda self: self._still_has_to_move, _set_still_has_to_move)
 
     def capture(self, capturer):
 
@@ -83,103 +70,9 @@ class Dog(Piece):
                     self.valid_moves += (from_dog_to_leash + d,)
 
 
-class EnragedDog(Piece):
+class EnragedDog(PieceMovingTwice):
+
+    # TODO : when an enraged dog gets trapped on first move ?
 
     LETTER = "ed"
     moves = ((1, 0), (0, 1), (-1, 0), (0, -1))
-
-    def __init__(self, board, color, square):
-
-        Piece.__init__(self, board, color, square)
-        self._still_has_to_move = False
-
-    def _set_still_has_to_move(self, value):
-
-        assert bool(value) is value
-
-        self._still_has_to_move = value
-        if value is True:
-            self.board.ed_secondmove = self
-        elif self.board.ed_secondmove is self:
-            self.board.ed_secondmove = None
-    still_has_to_move = property(lambda self: self._still_has_to_move, _set_still_has_to_move)
-
-    def copy(self, original):
-
-        super().copy(original)
-
-        if not self.is_captured:
-            self.still_has_to_move = original.still_has_to_move
-
-    def go_to(self, square):
-
-        Piece.go_to(self, square)
-
-        if self.cage is None:
-            self.still_has_to_move = not self.still_has_to_move
-            if self.still_has_to_move:
-                return ("set_next_turn", self.color),
-        else:  # the dog just got trapped
-            self.still_has_to_move = False
-
-    def update_valid_moves(self):
-
-        if self.is_captured:
-            return
-
-        self.valid_moves = ()
-        self.antiking_squares = ()
-
-        x = self.square // 10
-        y = self.square % 10
-
-        for move in self.moves:
-
-            dx, dy = move
-
-            if self.board.has_square(x + dx, y + dy):
-                d = dx * 10 + dy
-                square = self.square + d
-                if square not in self.board.existing_squares:
-                    raise AssertionError
-                self.antiking_squares += (square,)
-
-                piece_on_attainable_square = self.board[square]
-                attainable = False
-                if piece_on_attainable_square is 0:
-                    self.valid_moves += (d,)
-                    attainable = True
-                elif piece_on_attainable_square.color != self.color:
-
-                    # Cage
-                    if piece_on_attainable_square.is_trapped:
-                        continue
-
-                    if piece_on_attainable_square.LETTER == "s":
-                        # Cannot pull a stone if there is a piece behind
-                        # Only works if all the rolling pieces have 1 square moves
-                        if self.board.has_square(x + 2 * dx, y + 2 * dy):
-                            piece_behind_stone = self.board[square + dx * 10 + dy]
-                            if piece_behind_stone is not 0:
-                                continue
-
-                    self.valid_moves += (d,)
-                    attainable = True
-
-                if attainable is True:
-
-                    x2 = square // 10
-                    y2 = square % 10
-
-                    for second_move in self.moves:
-
-                        dx2, dy2 = second_move
-
-                        if self.board.has_square(x2 + dx2, y2 + dy2):
-                            d2 = dx2 * 10 + dy2
-                            square2 = square + d2
-                            if square2 is self.square:
-                                continue
-                            if square2 in self.antiking_squares:
-                                continue
-                            self.antiking_squares += (square2,)

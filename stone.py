@@ -8,6 +8,27 @@ class Stone(Piece):
     LETTER = "s"
     moves = ((-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1))
 
+    def can_be_captured_by(self, piece, move):
+
+        # A king, queen, rook, bishop or enraged dog can roll a stone
+        # pawns and leashed dog magange this themselves, only have to care about knight
+        if piece.LETTER not in ('k', 'q', 'r', 'b', 'ed'):
+            return False
+
+        # Cannot pull a stone if there is a piece behind
+        # Only works if all the rolling pieces have 1 square moves
+        x = piece.square // 10
+        y = piece.square % 10
+        dx, dy = move
+        normalized_dx = max(min(dx, 1), -1)
+        normalized_dy = max(min(dy, 1), -1)
+        if self.board.has_square(x + dx + normalized_dx, y + dy + normalized_dy):
+            piece_behind_stone = self.board[self.square + normalized_dx * 10 + normalized_dy]
+            if piece_behind_stone != 0:
+                return False
+
+        return True
+
     def capture(self, capturer):
 
         start_square = capturer.square

@@ -71,7 +71,7 @@ class Piece:
     moves = ()
 
     SubPieceAttributes = ("moves", "LETTER")
-    SubPieceMethods = ("capture", "go_to", "uncapture", "undo", "update_valid_moves")
+    SubPieceMethods = ("capture", "copy", "go_to", "uncapture", "undo", "update_valid_moves")
 
     def __init__(self, board, color, square):
 
@@ -110,6 +110,21 @@ class Piece:
     coordinates = property(lambda self: file_dict[self.file] + str(self.board.nbranks - self.rank))
     file = property(lambda self: self.square // 10)
     rank = property(lambda self: self.square % 10)
+
+    def can_capture(self, piece, move):
+
+        if piece == 0:
+            return True
+
+        if piece.color == self.color:
+            return False
+
+        return piece.can_be_captured_by(self, move)
+
+    def can_be_captured_by(self, piece, move):
+        """ Only called by piece.can_capture() """
+
+        return True
 
     def capture(self, capturer):
         # The board call this function when this piece is captured
@@ -205,7 +220,7 @@ class Piece:
         self.trap.ally = None
         self.trap = None
 
-    def update_valid_moves(self):
+    def update_valid_moves_TBR(self):
 
         if self.is_captured:
             return
@@ -259,10 +274,156 @@ class Piece:
 
                     self.valid_moves += (d,)
 
+    def update_valid_moves(self):
+        """
+        Si la piece est capturée :
+            elle n'a aucun coup valide
+
+        Pour chaque case atteignable :
+            Si la case est hors du plateau, on s'en fiche
+            Le roi adverse n'a pas le droit de se retrouver sur cette case
+
+            Si la case est libre :
+                La piece peut se rendre sur la case
+
+            Si la case est occupée par un allié :
+                La pièce ne peut pas s'y rendre
+
+            Si la case est occupée par un ennemi :
+                Si la pièce a le droit de manger l'ennemi :
+                    La pièce peut se rendre sur la case
+
+        """
+
+        if self.is_captured:
+            return
+
+        self.valid_moves = ()
+        self.antiking_squares = ()
+        x = self.square // 10
+        y = self.square % 10
+
+        for move in self.moves:
+
+            dx, dy = move
+
+            if not self.board.has_square(x + dx, y + dy):
+                continue
+
+            d = dx * 10 + dy
+            square = self.square + d
+            if square not in self.board.existing_squares:
+                raise AssertionError
+            self.antiking_squares += (square,)
+
+            if self.can_capture(self.board[square], move):
+                self.valid_moves += (d,)
+            continue
+
+            piece_on_attainable_square = self.board[square]
+            # if no piece is on the square
+            if piece_on_attainable_square == 0:
+
+                # if there is an enemy trap on that square, we can't ride it
+                # TODO
+                if hasattr(self.board, "trap"):
+                    if True in (trap.state == 0 and trap.square is square
+                                for trap in self.board.trap[self.enemy_color]):
+                        continue
+
+                self.valid_moves += (d,)
+
+            elif piece_on_attainable_square.color != self.color and False:
+
+                # Cage
+                # TODO
+                if piece_on_attainable_square.is_trapped:
+                    continue
+
+                # If it is a stone, pawns, knights and leashed dogs cannot move it
+                # pawns and leashed dog magange this themselves, only have to care about knight
+                if piece_on_attainable_square.LETTER == "s":
+                    if self.LETTER == "n":
+                        continue
+                    # Cannot pull a stone if there is a piece behind
+                    # Only works if all the rolling pieces have 1 square moves
+                    if self.board.has_square(x + 2 * dx, y + 2 * dy):
+                        piece_behind_stone = self.board[square + dx * 10 + dy]
+                        if piece_behind_stone != 0:
+                            continue
+
+            elif self.can_capture(piece_on_attainable_square, move):
+                self.valid_moves += (d,)
+
 
 class RollingPiece(Piece):
 
     def update_valid_moves(self):
+        """
+        Si la piece est capturée :
+            elle n'a aucun coup valide
+
+        Pour chaque direction :
+            Tant que l'on n'est pas arrêté :
+
+                On prends la case suivante dans la direction
+
+                Si la case est hors du plateau, on change de direction
+
+                Sinon, le roi adverse n'a pas le droit de se retrouver sur cette case, on garde la direction
+
+                Si la case est libre :
+                    La piece peut se rendre sur la case
+                    On garde la direction
+
+                Si la case est occupée par un allié :
+                    La pièce ne peut pas s'y rendre
+
+                Si la case est occupée par un ennemi :
+                    Si la pièce a le droit de manger l'ennemi :
+                        La pièce peut se rendre sur la case
+                        On garde la direction
+
+        """
+
+        if self.is_captured:
+            return
+
+        self.valid_moves = ()
+        self.antiking_squares = ()
+        start_square = self.square
+
+        for move in self.moves:
+
+            dx, dy = move
+            x = start_square // 10
+            y = start_square % 10
+            d = dx * 10 + dy
+            square = start_square + d
+
+            rolling = True
+            while rolling:
+                rolling = False
+
+                if not self.board.has_square(x + dx, y + dy):
+                    continue
+
+                self.antiking_squares += (square,)
+
+                piece_on_attainable_square = self.board[square]
+
+                if self.can_capture(piece_on_attainable_square, move):
+                    self.valid_moves += (d,)
+
+                if piece_on_attainable_square == 0:
+                    # we can roll one step further
+                    x += dx
+                    y += dy
+                    d += dx * 10 + dy
+                    square = start_square + d
+                    rolling = True
+
+    def update_valid_moves_TBR(self):
 
         if self.is_captured:
             return
@@ -282,51 +443,137 @@ class RollingPiece(Piece):
             while rolling:
                 rolling = False
 
-                if self.board.has_square(x + dx, y + dy):
+                if not self.board.has_square(x + dx, y + dy):
+                    continue
 
-                    self.antiking_squares += (square + d,)
+                self.antiking_squares += (square + d,)
 
-                    piece_on_attainable_square = self.board[square + d]
+                piece_on_attainable_square = self.board[square + d]
 
-                    if piece_on_attainable_square == 0:
+                if piece_on_attainable_square == 0:
 
-                        rolling = True
+                    rolling = True
 
-                        # if there is an enemy trap on that square, we can't ride it
+                    # if there is an enemy trap on that square, we can't ride it
+                    if hasattr(self.board, "trap"):
+                        if True in (trap.state == 0 and trap.square is square + d
+                                    for trap in self.board.trap[self.enemy_color]):
+                            rolling = False
+
+                    # we can roll one step further
+                    if rolling is True:
+
+                        # if there is an ally trap on that square, we can't go further
                         if hasattr(self.board, "trap"):
                             if True in (trap.state == 0 and trap.square is square + d
-                                        for trap in self.board.trap[self.enemy_color]):
+                                        for trap in self.board.trap[self.color]):
                                 rolling = False
 
-                        # we can roll one step further
-                        if rolling is True:
-
-                            # if there is an ally trap on that square, we can't go further
-                            if hasattr(self.board, "trap"):
-                                if True in (trap.state == 0 and trap.square is square + d
-                                            for trap in self.board.trap[self.color]):
-                                    rolling = False
-
-                            self.valid_moves += (d,)
-                            x += dx
-                            y += dy
-                            d += dx * 10 + dy
-
-                    elif piece_on_attainable_square.color != self.color:
-
-                        # Cage
-                        if piece_on_attainable_square.is_trapped:
-                            continue
-
-                        # Cannot pull a stone if there is a piece behind
-                        # Only works if all the rolling pieces have 1 square moves
-                        if piece_on_attainable_square.LETTER == "s":
-                            if self.board.has_square(x + 2 * dx, y + 2 * dy):
-                                piece_behind_stone = self.board[square + d + dx * 10 + dy]
-                                if piece_behind_stone != 0:
-                                    continue
-
                         self.valid_moves += (d,)
+                        x += dx
+                        y += dy
+                        d += dx * 10 + dy
+
+                elif piece_on_attainable_square.color != self.color:
+
+                    # Cage
+                    if piece_on_attainable_square.is_trapped:
+                        continue
+
+                    # Cannot pull a stone if there is a piece behind
+                    # Only works if all the rolling pieces have 1 square moves
+                    if piece_on_attainable_square.LETTER == "s":
+                        if self.board.has_square(x + 2 * dx, y + 2 * dy):
+                            piece_behind_stone = self.board[square + d + dx * 10 + dy]
+                            if piece_behind_stone != 0:
+                                continue
+
+                    self.valid_moves += (d,)
+
+
+class PieceMovingTwice(Piece):
+
+    still_has_to_move = False
+    SubPieceAttributes = Piece.SubPieceAttributes + ("still_has_to_move",)
+
+    def copy(self, original):
+
+        Piece.copy(self, original)
+
+        if not self.is_captured:
+            self.still_has_to_move = original.still_has_to_move
+
+    def go_to(self, square):
+
+        Piece.go_to(self, square)
+
+        self.still_has_to_move = not self.still_has_to_move
+        if self.still_has_to_move:
+            return ("set_next_turn", self.color),
+
+    def update_valid_moves(self):
+        """
+        Si la piece est capturée :
+            elle n'a aucun coup valide
+
+        Pour chaque case atteignable :
+            Si la case est hors du plateau, on s'en fiche
+            Le roi adverse n'a pas le droit de se retrouver sur cette case
+
+            Si la case est libre :
+                La piece peut se rendre sur la case
+
+            Si la case est occupée par un allié :
+                La pièce ne peut pas s'y rendre
+
+            Si la case est occupée par un ennemi :
+                Si la pièce a le droit de manger l'ennemi :
+                    La pièce peut se rendre sur la case
+
+        """
+
+        if self.is_captured:
+            return
+
+        self.valid_moves = ()
+        self.antiking_squares = ()
+        x = self.square // 10
+        y = self.square % 10
+
+        for move in self.moves:
+
+            dx, dy = move
+
+            if not self.board.has_square(x + dx, y + dy):
+                continue
+
+            d = dx * 10 + dy
+            square = self.square + d
+            if square not in self.board.existing_squares:
+                raise AssertionError
+            self.antiking_squares += (square,)
+
+            if self.can_capture(self.board[square], move):
+                self.valid_moves += (d,)
+
+                x2 = square // 10
+                y2 = square % 10
+
+                for second_move in self.moves:
+
+                    dx2, dy2 = second_move
+
+                    if self.board.has_square(x2 + dx2, y2 + dy2):
+                        d2 = dx2 * 10 + dy2
+                        square2 = square + d2
+                        if square2 == self.square:
+                            continue
+                        if square2 in self.antiking_squares:
+                            continue
+                        self.antiking_squares += (square2,)
+
+
+# TODO : solve : when a PieceMovingTwice blocks a check whith the first move, what next ?
 
 
 class PieceWidget(bp.Focusable):

@@ -1,6 +1,6 @@
 
 import baopig as bp
-from piece import Bonus, Piece, PieceWidget, file_dict
+from piece import Bonus, Piece, PieceMovingTwice, PieceWidget, file_dict
 from queen import Queen
 from rook import Rook
 from bishop import Bishop
@@ -19,7 +19,7 @@ class Board:
         # If a square is filled with a piece, it returns the piece
         self._squares = [0] * 80
 
-        # All the pieces, captured and on the board ones
+        # All the pieces, captured or not
         self.pieces = ()
         self.bonus = ()  # traps, cages, dynamites...
         self.set = {"w": (), "b": ()}
@@ -41,9 +41,6 @@ class Board:
 
         # Used by displayed boards for calculations
         self.calculator = None
-
-        # TODO
-        self.ed_secondmove = None
 
     def __getitem__(self, item):
 
@@ -310,12 +307,12 @@ class BoardDisplay(bp.Zone):
         if widget.piece.color != self.board.game.turn:
             return
 
-        try:
-            if self.board.ed_secondmove is not None:
-                if widget.piece != self.board.ed_secondmove:
+        if self.board.game.history:
+            last_move = self.board.game.history[-1]
+            piece = self.board[last_move.end_square]
+            if hasattr(piece, "still_has_to_move") and piece.still_has_to_move:
+                if widget.piece != piece:
                     return
-        except AttributeError:
-            pass
 
         start_square = widget.piece.square
         for move in widget.piece.valid_moves:

@@ -64,7 +64,7 @@ class Pawn(Piece):
                 if square not in self.board.existing_squares:
                     raise AssertionError
                 # piece_on_attainable_square = self.board[square]
-                if self.board[square] is 0:
+                if self.board[square] == 0:
                     self.valid_moves += (d,)
                 else:
                     break  # not reaching the second step if a piece is on the front square
@@ -81,16 +81,16 @@ class Pawn(Piece):
                 self.antiking_squares += (square,)
 
                 piece_on_attainable_square = self.board[square]
-                if piece_on_attainable_square is not 0 and piece_on_attainable_square.color != self.color:
+                if piece_on_attainable_square != 0 and piece_on_attainable_square.color != self.color:
                     self.valid_moves += (d,)
 
                 # en passant
-                elif piece_on_attainable_square is 0:
+                elif piece_on_attainable_square == 0:
                     piece_aside = self.board[self.square + dx * 10]
-                    if piece_aside is not 0 and piece_aside.LETTER == "p" and piece_aside.color != self.color:
+                    if piece_aside != 0 and piece_aside.LETTER == "p" and piece_aside.color != self.color:
                         last_move = self.board.game.history[-1]
                         if self.board[last_move.end_square] is piece_aside and \
-                                abs(last_move.start_square - last_move.end_square) is 2:
+                                abs(last_move.start_square - last_move.end_square) == 2:
                             self.valid_moves += (d,)
 
 
@@ -101,22 +101,6 @@ class IPawn(Pawn):  # Pawns for iratus
         Pawn.__init__(self, *args, **kwargs)
 
         self.promotion_rank = 0 if self.color == "w" else 9
-
-        # ENRAGED DOG attributes
-        self.leash = None
-        self.is_leashed = False
-        self._still_has_to_move = False
-
-    def _set_still_has_to_move(self, value):
-
-        assert bool(value) is value
-
-        self._still_has_to_move = value
-        if value is True:
-            self.board.ed_secondmove = self
-        elif self.board.ed_secondmove is self:
-            self.board.ed_secondmove = None
-    still_has_to_move = property(lambda self: self._still_has_to_move, _set_still_has_to_move)
 
     def update_valid_moves(self):
         """
@@ -139,11 +123,11 @@ class IPawn(Pawn):  # Pawns for iratus
                 if square not in self.board.existing_squares:
                     raise AssertionError
                 # piece_on_attainable_square = self.board[square]
-                if self.board[square] is 0:
+                if self.board[square] == 0:
 
                     # if there is an enemy trap on that square, we can't ride it
                     if hasattr(self.board, "trap"):
-                        if True in (trap.state is 0 and trap.square is square
+                        if True in (trap.state == 0 and trap.square is square
                                     for trap in self.board.trap[self.enemy_color]):
                             continue
 
@@ -163,12 +147,12 @@ class IPawn(Pawn):  # Pawns for iratus
                 piece_on_attainable_square = self.board[square]
 
                 # en passant
-                if piece_on_attainable_square is 0:
+                if piece_on_attainable_square == 0:
                     piece_aside = self.board[self.square + dx * 10]
-                    if piece_aside is not 0 and piece_aside.LETTER == "p" and piece_aside.color != self.color:
+                    if piece_aside != 0 and piece_aside.LETTER == "p" and piece_aside.color != self.color:
                         last_move = self.board.game.history[-1]
                         if self.board[last_move.end_square] is piece_aside and \
-                                abs(last_move.start_square - last_move.end_square) is 2:
+                                abs(last_move.start_square - last_move.end_square) == 2:
                             self.valid_moves += (d,)
 
                 elif piece_on_attainable_square.color != self.color:
