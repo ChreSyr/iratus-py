@@ -82,7 +82,7 @@ class IratusBoard(Board):
                 elif piece.LETTER == "ed" and piece.still_has_to_move is False:
                     cloned_piece.update_valid_moves()
                     for move2 in cloned_piece.valid_moves:
-                        history_element2 = self.calculator.move(cloned_piece, cloned_piece.square + move2)
+                        history_element2 = self.calculator.move(cloned_piece.square, cloned_piece.square + move2)
                         for enemy_cloned_piece2 in self.calculator.set[cloned_piece.enemy_color]:
                             enemy_cloned_piece2.update_valid_moves()
                         if not self.calculator.king[piece.color].in_check:

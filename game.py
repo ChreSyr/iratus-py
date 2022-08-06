@@ -35,6 +35,27 @@ class Game:
 
     def check_for_end(self):
 
+        game_state = self.get_game_state()
+
+        if game_state == "checkmate":
+            self.history[-1].notation += "#"
+        elif game_state == "check":
+            self.history[-1].notation += "+"
+
+        # TODO : cage, compact edog notation
+
+        if game_state in ("checkmate", "stalemate",
+                          "draw by repetition", "draw by insufficient material", "draw by 50-moves rule"):
+            description = ""
+            if game_state == "checkmate":
+                last_move = self.history[-1]
+                winner = "Black" if last_move.turn == "b" else "White"
+                description = winner + " won"
+            bp.Dialog(self.app, one_shot=True, title=game_state.capitalize(), description=description,
+                      choices=("That was a real good game",)).open()
+
+    def get_game_state(self):
+
         # Draw by 50-moves rule
         last_move = self.history[-1]
         if self.board[last_move.end_square].LETTER == "p":
@@ -113,24 +134,7 @@ class Game:
         self.fat_history.append(self.board.get_position())
         self.back_history.clear()
 
-        game_state = self.check_for_end()
-
-        if game_state == "checkmate":
-            self.history[-1].notation += "#"
-        elif game_state == "check":
-            self.history[-1].notation += "+"
-
-        # TODO : promotion, cage, compact edog notation, result of the game
-        # TODO : trigger an end of game check when a promotion is done
-
-        if game_state in ("checkmate", "stalemate",
-                          "draw by repetition", "draw by insufficient material", "draw by 50-moves rule"):
-            description = ""
-            if game_state == "checkmate":
-                winner = "Black" if piece.color == "b" else "White"
-                description = winner + " won"
-            bp.Dialog(self.app, one_shot=True, title=game_state.capitalize(), description=description,
-                      choices=("That was a real good game",)).open()
+        self.check_for_end()
 
     def redo(self):
         """

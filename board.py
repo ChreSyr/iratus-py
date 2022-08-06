@@ -1,6 +1,10 @@
 
 import baopig as bp
 from piece import Bonus, Piece, PieceWidget, file_dict
+from queen import Queen
+from rook import Rook
+from bishop import Bishop
+from knight import Knight
 
 
 class Board:
@@ -111,7 +115,8 @@ class Board:
         for before_move in move.before_moves:
             self.redo(before_move)
 
-        piece.go_to(move.end_square)
+        Piece.go_to(piece, move.end_square)
+        # piece.go_to(move.end_square)
 
         for after_move in move.after_moves:
             self.redo(after_move)
@@ -179,7 +184,12 @@ class BoardDisplay(bp.Zone):
 
     STYLE = bp.Zone.STYLE.substyle()
     STYLE.create(
-        promotion_choices=("Queen", "Rook", "Bishop", "Knight"),
+        promotion_choices={
+            "Queen": Queen,
+            "Rook": Rook,
+            "Bishop": Bishop,
+            "Knight": Knight,
+        },
     )
     STYLE.modify(
         background_image=bp.image.load("Images/chessboard.png")
@@ -233,10 +243,15 @@ class BoardDisplay(bp.Zone):
 
         self.pawn_to_promote = None
         self.promotion_dialog = bp.Dialog(self.application, title="Promotion time !",
-                                          choices=self.style["promotion_choices"])
+                                          choices=self.style["promotion_choices"].keys())
 
         def promote(ans):
-            self.pawn_to_promote.promote(eval(ans))
+            promotion = "transform", self.pawn_to_promote, self.style["promotion_choices"][ans]
+            last_move = self.board.game.history[-1]
+            last_move.execute_commands(commands=(promotion,))
+            last_move.notation += "=" + promotion[2].LETTER.upper()
+            self.board.update_pieces_vm()
+            self.board.game.check_for_end()
         self.promotion_dialog.signal.ANSWERED.connect(promote, owner=None)
 
         self.orientation = "w"
@@ -340,8 +355,6 @@ class Move:
         self.unequiped_trap = None
         self.destroyed_trap = None
         self.broken_cage = None
-
-        self.promotion = None
 
         self.before_moves = []
         self.after_moves = []

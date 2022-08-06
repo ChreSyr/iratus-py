@@ -17,6 +17,7 @@ from game import Game
 from board import BoardDisplay
 from chessboard import ChessBoard
 from iratusboard import IratusBoard
+from dog import EnragedDog
 
 
 iratus_theme = bp.Theme()
@@ -50,8 +51,10 @@ class IratusApp(bp.Application):
 
         self.chess_scene = GameScene(self, board_class=ChessBoard, name="ChessScene")
         self.iratus_scene = GameScene(self, board_class=IratusBoard, name="IratusScene")
-        self.iratus_scene.set_style_for(BoardDisplay, promotion_choices=("Queen", "Rook", "Bishop", "Knight", "Dog"),
-                                        background_image=bp.image.load("Images/iratusboard.png"))
+        iratus_promotion_choices = BoardDisplay.STYLE["promotion_choices"].copy()
+        iratus_promotion_choices["Enraged Dog"] = EnragedDog
+        self.iratus_scene.set_style_for(BoardDisplay, background_image=bp.image.load("Images/iratusboard.png"),
+                                        promotion_choices=iratus_promotion_choices)
         self.menu_scene = MenuScene(self)
 
         self.quit_game_dialog = QuitGameDialog(self)
