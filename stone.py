@@ -10,19 +10,22 @@ class Stone(Piece):
 
     def can_be_captured_by(self, piece, move):
 
-        # A king, queen, rook, bishop or enraged dog can roll a stone
+        # A king, queen, rook, bishop, leash or enraged dog can roll a stone
         # pawns and leashed dog magange this themselves, only have to care about knight
-        if piece.LETTER not in ('k', 'q', 'r', 'b', 'ed'):
-            return False
+        # if piece.LETTER not in ('k', 'q', 'r', 'b', 'l', 'ed'):
+        #     return False
 
         # Cannot pull a stone if there is a piece behind
-        # Only works if all the rolling pieces have 1 square moves
-        x = piece.square // 10
-        y = piece.square % 10
+        # Only works if all the move is vertical, horizontal or diagonal (knights can't roll stones)
         dx, dy = move
+        if abs(dx) != abs(dy) and 0 not in (dx, dy):
+            return False
+
         normalized_dx = max(min(dx, 1), -1)
         normalized_dy = max(min(dy, 1), -1)
-        if self.board.has_square(x + dx + normalized_dx, y + dy + normalized_dy):
+        x = self.square // 10
+        y = self.square % 10
+        if self.board.has_square(x + normalized_dx, y + normalized_dy):
             piece_behind_stone = self.board[self.square + normalized_dx * 10 + normalized_dy]
             if piece_behind_stone != 0:
                 return False
@@ -74,11 +77,9 @@ class Stone(Piece):
                 rolling_square = None
 
         if rolling_square is not None:
-            roll = "before_move", self, rolling_square
+            roll = "before_move", self.square, rolling_square
             uncapture = "uncapture", self
             return roll, uncapture
-
-            # return self.board.move(self, rolling_square)
 
     def update_valid_moves(self):
 
@@ -100,28 +101,30 @@ class Stone(Piece):
             while rolling:
                 rolling = False
 
-                if self.board.has_square(x + dx, y + dy):
-                    if square + d not in self.board.existing_squares:
-                        raise AssertionError
-                    piece_on_attainable_square = self.board[square + d]
+                if not self.board.has_square(x + dx, y + dy):
+                    continue
 
-                    if piece_on_attainable_square is 0:
+                if square + d not in self.board.existing_squares:
+                    raise AssertionError
+                piece_on_attainable_square = self.board[square + d]
 
-                        # if there is an enemy trap on that square, we can't ride it
-                        if hasattr(self.board, "trap"):
-                            if True in (trap.state is 0 and trap.square is square
-                                        for trap in self.board.trap[self.enemy_color]):
-                                continue
+                if piece_on_attainable_square == 0:
 
-                        valid_move = d
-                        x += dx
-                        y += dy
-                        d += dx * 10 + dy
-                        rolling = True
+                    # if there is an enemy trap on that square, we can't ride it
+                    if hasattr(self.board, "trap"):
+                        if True in (trap.state == 0 and trap.square is square
+                                    for trap in self.board.trap[self.enemy_color]):
+                            continue
 
-                    elif piece_on_attainable_square.is_trapped and piece_on_attainable_square.color == self.color:
-                        valid_move = d
-                        rolling = False
+                    valid_move = d
+                    x += dx
+                    y += dy
+                    d += dx * 10 + dy
+                    rolling = True
+
+                elif piece_on_attainable_square.is_trapped and piece_on_attainable_square.color == self.color:
+                    valid_move = d
+                    rolling = False
 
             if valid_move is not None:
                 self.valid_moves += (valid_move,)

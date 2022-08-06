@@ -38,36 +38,22 @@ class Dog(Piece):
 
             dx, dy = move
 
-            if self.board.has_square(x + dx, y + dy):
-                d = dx * 10 + dy
-                square = self.leash.square + d
-                if square not in self.board.existing_squares:
-                    raise AssertionError
-                self.antiking_squares += (square,)
+            if not self.board.has_square(x + dx, y + dy):
+                continue
 
-                piece_on_attainable_square = self.board[square]
+            d = dx * 10 + dy
+            square = self.leash.square + d
+            if square not in self.board.existing_squares:
+                raise AssertionError
+            self.antiking_squares += (square,)
 
-                if piece_on_attainable_square is 0:
+            start_square = self.square
+            end_square = square
+            dx = end_square // 10 - start_square // 10
+            dy = end_square % 10 - start_square % 10
 
-                    # if there is an enemy trap on that square, we can't ride it
-                    if hasattr(self.board, "trap"):
-                        if True in (trap.state is 0 and trap.square is square
-                                    for trap in self.board.trap[self.enemy_color]):
-                            continue
-
-                    self.valid_moves += (from_dog_to_leash + d,)
-
-                elif piece_on_attainable_square.color != self.color:
-
-                    # Cage
-                    if piece_on_attainable_square.is_trapped:
-                        continue
-
-                    # Stone
-                    if piece_on_attainable_square.LETTER == "s":
-                        continue
-
-                    self.valid_moves += (from_dog_to_leash + d,)
+            if self.can_capture(self.board[square], (dx, dy)):
+                self.valid_moves += (from_dog_to_leash + d,)
 
 
 class EnragedDog(PieceMovingTwice):

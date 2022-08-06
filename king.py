@@ -69,25 +69,12 @@ class King(Piece):
                     raise AssertionError
                 self.antiking_squares += (square,)
 
-                piece_on_attainable_square = self.board[square]
-                if piece_on_attainable_square == 0:
-
-                    # if there is an enemy trap on that square, we can't ride it
-                    if hasattr(self.board, "trap"):
-                        if True in (trap.state == 0 and trap.square is square
-                                    for trap in self.board.trap[self.enemy_color]):
-                            continue
-
+                if self.can_capture(self.board[square], move):
                     self.valid_moves += (d,)
 
-                elif piece_on_attainable_square.color != self.color:
-                    # if piece_on_attainable_square.LETTER == "l":
-                    #     continue
-                    if not piece_on_attainable_square.is_trapped:
-                        if piece_on_attainable_square.trap is None:
-                            self.valid_moves += (d,)
-
         if self.castle_rights[2] is None and not self.in_check:
+
+            # TODO : remember if the rooks have moved
 
             # castling at right
 

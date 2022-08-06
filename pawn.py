@@ -73,28 +73,30 @@ class Pawn(Piece):
 
         for move in self.attacking_moves:
             dx, dy = move
-            if self.board.has_square(x + dx, y + dy):
-                d = dx * 10 + dy
-                square = self.square + d
-                if square not in self.board.existing_squares:
-                    raise AssertionError
-                self.antiking_squares += (square,)
+            if not self.board.has_square(x + dx, y + dy):
+                continue
+                
+            d = dx * 10 + dy
+            square = self.square + d
+            if square not in self.board.existing_squares:
+                raise AssertionError
+            self.antiking_squares += (square,)
 
-                piece_on_attainable_square = self.board[square]
-                if piece_on_attainable_square != 0 and piece_on_attainable_square.color != self.color:
-                    self.valid_moves += (d,)
+            piece_on_attainable_square = self.board[square]
 
+            if piece_on_attainable_square == 0:
                 # en passant
-                elif piece_on_attainable_square == 0:
-                    piece_aside = self.board[self.square + dx * 10]
-                    if piece_aside != 0 and piece_aside.LETTER == "p" and piece_aside.color != self.color:
-                        last_move = self.board.game.history[-1]
-                        if self.board[last_move.end_square] is piece_aside and \
-                                abs(last_move.start_square - last_move.end_square) == 2:
-                            self.valid_moves += (d,)
+                piece_aside = self.board[self.square + dx * 10]
+                if piece_aside != 0 and piece_aside.LETTER == "p" and piece_aside.color != self.color:
+                    last_move = self.board.game.history[-1]
+                    if self.board[last_move.end_square] is piece_aside and \
+                            abs(last_move.start_square - last_move.end_square) == 2:
+                        self.valid_moves += (d,)
+            elif self.can_capture(piece_on_attainable_square, move):
+                self.valid_moves += (d,)
 
 
-class IPawn(Pawn):  # Pawns for iratus
+class TornadoPawn(Pawn):  # Pawns for iratus
 
     def __init__(self, *args, **kwargs):
 
@@ -146,23 +148,13 @@ class IPawn(Pawn):  # Pawns for iratus
 
                 piece_on_attainable_square = self.board[square]
 
-                # en passant
                 if piece_on_attainable_square == 0:
+                    # en passant
                     piece_aside = self.board[self.square + dx * 10]
                     if piece_aside != 0 and piece_aside.LETTER == "p" and piece_aside.color != self.color:
                         last_move = self.board.game.history[-1]
                         if self.board[last_move.end_square] is piece_aside and \
                                 abs(last_move.start_square - last_move.end_square) == 2:
                             self.valid_moves += (d,)
-
-                elif piece_on_attainable_square.color != self.color:
-
-                    # Cage
-                    if piece_on_attainable_square.is_trapped:
-                        continue
-
-                    # Stone
-                    if piece_on_attainable_square.LETTER == "s":
-                        continue
-
+                elif self.can_capture(piece_on_attainable_square, move):
                     self.valid_moves += (d,)

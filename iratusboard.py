@@ -4,7 +4,7 @@ import baopig as bp
 from board import Board, BoardDisplay, BoardPosition, Move
 from piece import Piece, PieceWidget
 from trap import Trap, TrapWidget, CageWidget
-from pawn import IPawn
+from pawn import TornadoPawn
 from stone import Stone
 from knight import Knight
 from bishop import Bishop
@@ -25,9 +25,9 @@ class IratusBoard(Board):
 
         # Creating pieces
         for square in range(2, 73, 10):
-            IPawn(self, "b", square)
+            TornadoPawn(self, "b", square)
         for square in range(7, 78, 10):
-            IPawn(self, "w", square)
+            TornadoPawn(self, "w", square)
 
         self.stone = {"b": (Stone(self, "b", 0), Stone(self, "b", 70)),
                       "w": (Stone(self, "w", 9), Stone(self, "w", 79))}
