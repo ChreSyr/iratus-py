@@ -112,7 +112,7 @@ class Board:
         for before_move in move.before_moves:
             self.redo(before_move)
 
-        Piece.go_to(piece, move.end_square)
+        piece.redo(move.end_square)
         # piece.go_to(move.end_square)
 
         for after_move in move.after_moves:
@@ -220,9 +220,9 @@ class BoardDisplay(bp.Zone):
         self.front_layer = bp.Layer(self, name="front_layer", weight=5)
 
         # This rectangle highlights the selected piece
-        self._selection_square = bp.Rectangle(self, width=self.square_size, height=self.square_size,
-                                              color=(50, 250, 50))
-        self._selection_square.hide()
+        self.selection_square = bp.Rectangle(self, width=self.square_size, height=self.square_size,
+                                             color=(50, 250, 50))
+        self.selection_square.hide()
 
         # Memory for the selected piece
         self.selected_piece = None
@@ -250,7 +250,7 @@ class BoardDisplay(bp.Zone):
 
         self.all_piecewidgets = []
 
-    def flip(self):
+    def flip(self, animate=True):
 
         self.orientation = "b" if self.orientation == "w" else "w"
 
@@ -262,7 +262,7 @@ class BoardDisplay(bp.Zone):
             for pw in pws:
                 if pw.piece.is_captured:
                     continue
-                pw.update_from_piece_movement()
+                pw.update_from_piece_movement(animate=animate)
 
             for bonus in self.board.bonus:
                 nsquare = 69 + self.board.nbranks - bonus.square if self.orientation == "b" else bonus.square
@@ -278,14 +278,14 @@ class BoardDisplay(bp.Zone):
             return  # occurs when a piece is captured : the selection signal is emitted right after it falls asleep
 
         # When the stone is rolled by an enemy
-        if widget.piece.LETTER == "s":
-            if not widget.collidemouse():
-                self.selected_piece = widget
-                widget.defocus()
-                return
+        # if widget.piece.LETTER == "s":
+        #     if not widget.collidemouse():
+        #         self.selected_piece = widget
+        #         widget.defocus()
+        #         return
 
-        self._selection_square.set_pos(topleft=widget.rect.topleft)
-        self._selection_square.show()
+        self.selection_square.set_pos(topleft=widget.rect.topleft)
+        self.selection_square.show()
         self.selected_piece = widget
 
         if widget.piece.color != self.board.game.turn:
@@ -311,7 +311,7 @@ class BoardDisplay(bp.Zone):
 
         assert widget is self.selected_piece
         self.selected_piece = None
-        self._selection_square.hide()
+        self.selection_square.hide()
 
         for vm_watermark in self.visible_vm_watermarks:
             if vm_watermark.collidemouse():

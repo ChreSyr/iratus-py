@@ -73,24 +73,43 @@ class IratusBoard(Board):
         for piece in self.set[self.game.turn]:
             cloned_piece = self.calculator.get_simulated_piece(piece)
             valid_moves = []  # moves who don't leave the king in check
-            for move in piece.valid_moves:
-                history_element = self.calculator.move(cloned_piece.square, piece.square + move)
-                for enemy_cloned_piece in self.calculator.set[cloned_piece.enemy_color]:
-                    enemy_cloned_piece.update_valid_moves()
-                if not self.calculator.king[piece.color].in_check:
-                    valid_moves.append(move)
-                elif piece.LETTER == "ed" and piece.still_has_to_move is False:
+
+            if hasattr(piece, "still_has_to_move") and piece.still_has_to_move is False:
+
+                for move in piece.valid_moves:
+
+                    valid = False
+                    history_element = self.calculator.move(cloned_piece.square, piece.square + move)
+                    for enemy_cloned_piece in self.calculator.set[cloned_piece.enemy_color]:
+                        enemy_cloned_piece.update_valid_moves()
+
                     cloned_piece.update_valid_moves()
                     for move2 in cloned_piece.valid_moves:
+
                         history_element2 = self.calculator.move(cloned_piece.square, cloned_piece.square + move2)
                         for enemy_cloned_piece2 in self.calculator.set[cloned_piece.enemy_color]:
                             enemy_cloned_piece2.update_valid_moves()
+
                         if not self.calculator.king[piece.color].in_check:
-                            valid_moves.append(move)
-                            self.calculator.undo(history_element2)
-                            break
+                            valid = True
                         self.calculator.undo(history_element2)
-                self.calculator.undo(history_element)
+                        if valid:
+                            break
+
+                    self.calculator.undo(history_element)
+                    if valid:
+                        valid_moves.append(move)
+
+            else:
+                for move in piece.valid_moves:
+
+                    history_element = self.calculator.move(cloned_piece.square, piece.square + move)
+                    for enemy_cloned_piece in self.calculator.set[cloned_piece.enemy_color]:
+                        enemy_cloned_piece.update_valid_moves()
+                    if not self.calculator.king[piece.color].in_check:
+                        valid_moves.append(move)
+
+                    self.calculator.undo(history_element)
 
             piece.valid_moves = tuple(valid_moves)
 

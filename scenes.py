@@ -56,7 +56,12 @@ class GameButtonsZone(bp.Zone):
 
         def flip():
             self.application.current_game.board.display.flip()
-        bp.Button(self, text="Flip board", row=4, loc="center", command=flip)
+        b = bp.Button(self, text="Flip board", row=4, loc="center", command=flip)
+
+        def set_flip():
+            self.application.current_game.always_flip = cb.is_selected
+        cb = bp.CheckBox(self, text="Always flip", row=5, loc="center", command=set_flip, size=b.rect.size)
+        cb.text_widget.font.config(height=b.text_widget.font.height)
 
         def print_game():
             moves = []
@@ -79,7 +84,7 @@ class GameButtonsZone(bp.Zone):
                     pass
             bp.Dialog(self.application, title="Current game :", description=' '.join(moves), choices=("Thanks",),
                       one_shot=True).open()
-        bp.Button(self, text="Print game", row=5, loc="center", command=print_game)
+        bp.Button(self, text="Print game", row=6, loc="center", command=print_game)
 
 
 class MenuScene(bp.Scene):

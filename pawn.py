@@ -1,8 +1,6 @@
 
 
-import baopig
 from piece import Piece
-from dog import Dog
 
 
 class Pawn(Piece):
@@ -45,6 +43,12 @@ class Pawn(Piece):
                     abs(last_move.start_square - last_move.end_square) == 2:
                 en_passant = "capture", piece_behind
                 return en_passant,
+
+    def redo(self, square):
+
+        # skip the call to Pawn.go_to, avoiding the promotion dialog
+        super().go_to(square)
+        self._has_moved = square % 10 is not self.start_rank
 
     def update_valid_moves(self):
 

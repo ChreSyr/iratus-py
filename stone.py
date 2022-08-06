@@ -8,44 +8,7 @@ class Stone(Piece):
     LETTER = "s"
     moves = ((-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1))
 
-    def can_be_captured_by(self, piece, move):
-
-        # A king, queen, rook, bishop, leash or enraged dog can roll a stone
-        # pawns and leashed dog magange this themselves, only have to care about knight
-        # if piece.LETTER not in ('k', 'q', 'r', 'b', 'l', 'ed'):
-        #     return False
-
-        # Cannot pull a stone if there is a piece behind
-        # Only works if all the move is vertical, horizontal or diagonal (knights can't roll stones)
-        dx, dy = move
-        if abs(dx) != abs(dy) and 0 not in (dx, dy):
-            return False
-
-        normalized_dx = max(min(dx, 1), -1)
-        normalized_dy = max(min(dy, 1), -1)
-        x = self.square // 10
-        y = self.square % 10
-        if self.board.has_square(x + normalized_dx, y + normalized_dy):
-            piece_behind_stone = self.board[self.square + normalized_dx * 10 + normalized_dy]
-            if piece_behind_stone != 0:
-                return False
-
-        return True
-
-    def capture(self, capturer):
-
-        start_square = capturer.square
-        assert start_square != self.square
-
-        roll = self.roll(self.square // 10 - start_square // 10, self.square % 10 - start_square % 10)
-        if roll:  # The stone has not been ejected
-            # print("Stone roll : from {} to {}".format(square, captured_piece.square))
-            return roll
-
-        else:
-            super().capture(capturer)
-
-    def roll(self, dx, dy):
+    def _roll(self, dx, dy):
 
         dx = 1 if dx > 0 else -1 if dx < 0 else 0
         dy = 1 if dy > 0 else -1 if dy < 0 else 0
@@ -80,6 +43,44 @@ class Stone(Piece):
             roll = "before_move", self.square, rolling_square
             uncapture = "uncapture", self
             return roll, uncapture
+
+    def can_be_captured_by(self, piece, move):
+
+        # A king, queen, rook, bishop, leash or enraged dog can roll a stone
+        # pawns and leashed dog magange this themselves, only have to care about knight
+        # if piece.LETTER not in ('k', 'q', 'r', 'b', 'l', 'ed'):
+        #     return False
+
+        # Cannot pull a stone if there is a piece behind
+        # Only works if all the move is vertical, horizontal or diagonal (knights can't roll stones)
+        dx, dy = move
+        if abs(dx) != abs(dy) and 0 not in (dx, dy):
+            return False
+
+        normalized_dx = max(min(dx, 1), -1)
+        normalized_dy = max(min(dy, 1), -1)
+        x = self.square // 10
+        y = self.square % 10
+        if self.board.has_square(x + normalized_dx, y + normalized_dy):
+            piece_behind_stone = self.board[self.square + normalized_dx * 10 + normalized_dy]
+            if piece_behind_stone != 0:
+                return False
+
+        return True
+
+    def capture(self, capturer):
+
+        start_square = capturer.square
+        assert start_square != self.square
+
+        roll = self._roll(self.square // 10 - start_square // 10, self.square % 10 - start_square % 10)
+        if roll:  # The stone has not been ejected
+            # print("Stone roll : from {} to {}".format(square, captured_piece.square))
+            self.ignore_next_link = True
+            return roll
+
+        else:
+            super().capture(capturer)
 
     def update_valid_moves(self):
 

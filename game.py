@@ -23,6 +23,9 @@ class Game:
         # w is white won, b is black won, d is drawn
         self.result = None
 
+        # If True, flip the board at each move
+        self.always_flip = False
+
         # Initializing pieces valid moves
         for piece in self.board.set[self.turn]:
             piece.update_valid_moves()
@@ -51,8 +54,9 @@ class Game:
                 last_move = self.history[-1]
                 winner = "Black" if last_move.turn == "b" else "White"
                 description = winner + " won"
-            bp.Dialog(self.app, one_shot=True, title=game_state.capitalize(), description=description,
-                      choices=("That was a real good game",)).open()
+            end_dialog = bp.Dialog(self.app, one_shot=True, title=game_state.capitalize(), description=description,
+                                   choices=("That was a real good game",))
+            bp.Timer(.2, end_dialog.open).start()
 
     def get_game_state(self):
 
@@ -134,6 +138,10 @@ class Game:
         self.fat_history.append(self.board.get_position())
         self.back_history.clear()
 
+        if self.always_flip:
+            if move.turn != move.next_turn:
+                self.board.display.flip(animate=False)
+
         self.check_for_end()
 
     def redo(self):
@@ -164,6 +172,10 @@ class Game:
         # This occurs after the valid moves update because we need the castling rights
         self.fat_history.append(self.board.get_position())
 
+        if self.always_flip:
+            if last_undone_move.turn != last_undone_move.next_turn:
+                self.board.display.flip(animate=False)
+
     def undo(self):
         """
         Undo the last move
@@ -186,3 +198,7 @@ class Game:
         # Next turn, updating valid moves
         self.turn = last_move.turn
         self.board.update_pieces_vm()
+
+        if self.always_flip:
+            if last_move.turn != last_move.next_turn:
+                self.board.display.flip(animate=False)

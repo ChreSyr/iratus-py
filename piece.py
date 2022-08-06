@@ -1,3 +1,4 @@
+import time
 
 import baopig as bp
 
@@ -89,6 +90,9 @@ class Piece:
         # just for calculation use
         self.is_captured = False
 
+        # Block the next widget's link by mouse
+        self.ignore_next_link = False
+
         # for trap attachement
         self.bonus = None
         self.trap = None  # ally
@@ -177,6 +181,10 @@ class Piece:
     def init_display(self):
 
         self.widget = PieceWidget(self)
+
+    def redo(self, square):
+
+        self.go_to(square)
 
     def transform(self, piece_class):
         for attr in piece_class.SubPieceAttributes:
@@ -410,7 +418,11 @@ class PieceWidget(bp.Focusable):
 
         # Allow a selected piece to be unselected when you click on it
         self._was_selected = False
-        
+
+        # Animation
+        self.motion_animator = bp.RepeatingTimer(.01, self.animate)
+        self.motion_pos = self.motion_end = self.rect.topleft
+
         self.piece.board.display.all_piecewidgets.append(self)
 
     def __str__(self):
@@ -421,8 +433,6 @@ class PieceWidget(bp.Focusable):
 
         if self.is_asleep:
             self.defocus()  # when a piece grabs another one, the grabbed one is focused just before it disappears
-        else:
-            self.parent.select(self)
 
     def handle_defocus(self):
 
@@ -430,48 +440,74 @@ class PieceWidget(bp.Focusable):
             return
 
         self._was_selected = False
-        self.parent.unselect(self)
+        if self.parent.selected_piece is self:
+            self.parent.unselect(self)
 
     def handle_link(self):
 
         if self.is_asleep:
+            return  # just captured
+
+        if self.piece.ignore_next_link:
+            self.piece.ignore_next_link = False
+            self.defocus()
+            self.unlink()
             return
 
-        if self._was_selected:
+        self._was_selected = self.parent.selected_piece is self
+        self.parent.select(self)
 
-            # Trap unequipement
-            if self.piece.board.game.turn == self.piece.color and self.piece.trap is not None:
-                if self.piece.trap.trap_widget.is_visible:
-                    self.piece.trap.trap_widget.hide()
-                else:
-                    # was on a trap unequipement but clicked again on the piece
-                    self.piece.trap.trap_widget.show()
-                    self._was_selected = False
-                    self.defocus()
+        self.motion_animator.cancel()
+        self.layer.overlay(len(self.layer), self)
 
-            else:
-                self._was_selected = False
-                self.defocus()
-        else:
-            self._was_selected = True
+    def handle_link_motion(self, rel):
+
+        if self.is_asleep:
+            return  # just captured
+        self.move(*rel)
 
     def handle_unlink(self):
 
         if self.is_asleep:
-            return
+            return  # just captured
         
         for vm_watermark in self.parent.visible_vm_watermarks:
             if vm_watermark.collidemouse():
                 assert self.parent.selected_piece is self
+                self.motion_pos = self.rect.pos
                 self.defocus()
                 return
 
+        self.motion_pos = self.rect.pos
+        if self.parent.selection_square.collidemouse():
+            if self._was_selected:
+                self.defocus()
+        else:
+            self.defocus()
+        self.update_from_piece_movement()
+
+    def animate(self):
+
+        if self.rect.topleft != self.motion_end:
+            d = bp.Vector2(self.motion_end) - self.rect.topleft
+            length = max(10., d.length() / 10)
+            if d.length() > length:
+                d.scale_to_length(length)
+                self.motion_pos += d
+                self.set_pos(topleft=self.motion_pos)
+            else:
+                self.set_pos(topleft=self.motion_end)
+                self.motion_animator.cancel()
+
     def sleep(self):
 
+        if self.rect.topleft != self.motion_end:
+            self.set_pos(topleft=self.motion_end)
+            self.motion_animator.cancel()
         super().sleep()
         self.board_orientation_when_asleep = self.piece.board.display.orientation
 
-    def update_from_piece_movement(self):
+    def update_from_piece_movement(self, animate=True):
 
         square = self.piece.square
         if self.piece.board.display.orientation == "w":
@@ -480,7 +516,15 @@ class PieceWidget(bp.Focusable):
             col, row = 7 - square // 10, self.piece.board.nbranks - 1 - square % 10
 
         square_size = self.piece.board.display.square_size
-        self.set_pos(topleft=(col * square_size, row * square_size))
+        self.motion_animator.cancel()
+
+        if animate:
+            self.motion_end = col * square_size, row * square_size
+            self.animate()
+            self.motion_animator.start()
+        else:
+            self.set_pos(topleft=(col * square_size, row * square_size))
+            self.motion_pos = self.motion_end = self.rect.topleft
 
     def wake(self):
 
@@ -495,3 +539,6 @@ class PieceWidget(bp.Focusable):
 
                 square_size = self.piece.board.display.square_size
                 self.set_pos(topleft=(col * square_size, row * square_size))
+
+                # avoid the animation if the board has been flipped since the capture
+                self.motion_pos = self.motion_end = self.rect.topleft
