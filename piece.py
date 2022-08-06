@@ -146,24 +146,18 @@ class Piece:
         Should only be called by the board
         """
 
+        if self.is_captured:
+            self.square = square
+            return
+
         # Memorizing the new position for the game
-        assert self.board[self.square] is self
+        # assert self.board[self.square] is self
         self.board[self.square] = 0  # TODO
         self.board[square] = self  # self.square = square  # TODO
 
         # Memorizing the new position for the display
         if self.widget is not None:
-
-            if self.board.display.orientation == "w":
-                col, row = square // 10, square % 10
-            else:
-                col, row = 7 - square // 10, self.board.nbranks - 1 - square % 10
-
-            if self.widget.is_awake:
-                self.widget.layer.move(self.widget, col, row)
-            else:
-                self.widget._row = row
-                self.widget._col = col
+            self.widget.update_from_piece_movement()
 
     def init_display(self):
 
@@ -344,6 +338,7 @@ class PieceWidget(bp.Focusable):
                               surface=image, layer="pieces_layer")
 
         self.piece = piece
+        self.board_orientation_when_asleep = None
 
         # Allow a selected piece to be unselected when you click on it
         self._was_selected = False
@@ -409,3 +404,32 @@ class PieceWidget(bp.Focusable):
                 assert self.parent.selected_piece is self
                 self.defocus()
                 return
+
+    def sleep(self):
+
+        super().sleep()
+        self.board_orientation_when_asleep = self.piece.board.display.orientation
+
+    def update_from_piece_movement(self):
+
+        square = self.piece.square
+        if self.piece.board.display.orientation == "w":
+            col, row = square // 10, square % 10
+        else:
+            col, row = 7 - square // 10, self.piece.board.nbranks - 1 - square % 10
+
+        self.layer.move(self, col, row)
+
+    def wake(self):
+
+        if self.board_orientation_when_asleep != self.piece.board.display.orientation:
+
+            if self.piece.board.display.orientation == "w":
+                col, row = self.piece.square // 10, self.piece.square % 10
+            else:
+                col, row = 7 - self.piece.square // 10, self.piece.board.nbranks - 1 - self.piece.square % 10
+
+            self._row = row
+            self._col = col
+
+        super().wake()

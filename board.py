@@ -207,6 +207,12 @@ class BoardDisplay(bp.Zone):
         self.pieces_layer = bp.GridLayer(self, PieceWidget, name="pieces_layer", weight=4,
                                          row_height=self.square_size, col_width=self.square_size,
                                          nbcols=8, nbrows=board.nbranks)
+        self.flip_waitline = bp.GridLayer(self, PieceWidget, name="flip_waitline", weight=4,
+                                          row_height=self.square_size, col_width=self.square_size,
+                                          nbcols=8, nbrows=board.nbranks)
+        self.flipped_pieces_layer = bp.GridLayer(self, PieceWidget, name="flipped_pieces_layer", weight=4,
+                                                 row_height=self.square_size, col_width=self.square_size,
+                                                 nbcols=8, nbrows=board.nbranks)
 
         # This layer is just in front of the pieces
         self.front_layer = bp.Layer(self, name="front_layer", weight=5)
@@ -243,23 +249,24 @@ class BoardDisplay(bp.Zone):
 
         assert self.selected_piece is None
 
-        with bp.paint_lock:  # freezes the display durong the operation
+        with bp.paint_lock:  # freezes the display during the operation
 
             pws = tuple(self.all_piecewidgets)
             swapped = []
             for pw in pws:
-                assert isinstance(pw, PieceWidget)
-                if isinstance(pw, PieceWidget):
-                    if pw in swapped:
-                        continue
-                    try:
-                        # TODO : no piece change, only a visual change
-                        pw.piece.go_to(pw.piece.square)
-                        raise NotImplemented
-                    except PermissionError:
-                        pw2 = self.board[69 + self.board.nbranks - pw.piece.square].widget
-                        self.pieces_layer.swap(pw, pw2)
-                        swapped.append(pw2)
+
+                if pw in swapped:
+                    continue
+                if pw.piece.is_captured:
+                    continue
+
+                p2 = self.board[69 + self.board.nbranks - pw.piece.square]
+                if p2 == 0:
+                    pw.update_from_piece_movement()
+                else:
+                    pw2 = p2.widget
+                    self.pieces_layer.swap(pw, pw2)
+                    swapped.append(pw2)
 
             for bonus in self.board.bonus:
                 nsquare = 69 + self.board.nbranks - bonus.square if self.orientation == "b" else bonus.square
