@@ -395,24 +395,21 @@ class PieceWidget(bp.Focusable):
 
     def __init__(self, piece):
 
-        image = piece.board.display.application.images[piece.color+piece.LETTER]
-        image = bp.transform.scale(image, (piece.board.display.square_size, piece.board.display.square_size))
+        square_size = piece.board.display.square_size
 
-        bp.Focusable.__init__(self, piece.board.display, col=piece.square // 10, row=piece.square % 10,
-                              surface=image, layer="pieces_layer")
+        image = piece.board.display.application.images[piece.color+piece.LETTER]
+        image = bp.transform.scale(image, (square_size, square_size))
+
+        col = piece.square // 10
+        row = piece.square % 10
+        pos = col * square_size, row * square_size
+        bp.Focusable.__init__(self, piece.board.display, pos=pos, surface=image, layer="pieces_layer")
 
         self.piece = piece
         self.board_orientation_when_asleep = None
 
         # Allow a selected piece to be unselected when you click on it
         self._was_selected = False
-
-        # if piece.LETTER == "d":
-        #     self.calm_image = image
-        #     self.enraged_image = bp.transform.scale(
-        #         piece.board.display.application.images[piece.color+"ed"],
-        #         (piece.board.display.square_size, piece.board.display.square_size)
-        #     )
         
         self.piece.board.display.all_piecewidgets.append(self)
 
@@ -482,18 +479,19 @@ class PieceWidget(bp.Focusable):
         else:
             col, row = 7 - square // 10, self.piece.board.nbranks - 1 - square % 10
 
-        self.layer.move(self, col, row)
+        square_size = self.piece.board.display.square_size
+        self.set_pos(topleft=(col * square_size, row * square_size))
 
     def wake(self):
 
-        if self.board_orientation_when_asleep != self.piece.board.display.orientation:
+        with bp.paint_lock:
+            super().wake()
+            if self.board_orientation_when_asleep != self.piece.board.display.orientation:
 
-            if self.piece.board.display.orientation == "w":
-                col, row = self.piece.square // 10, self.piece.square % 10
-            else:
-                col, row = 7 - self.piece.square // 10, self.piece.board.nbranks - 1 - self.piece.square % 10
+                if self.piece.board.display.orientation == "w":
+                    col, row = self.piece.square // 10, self.piece.square % 10
+                else:
+                    col, row = 7 - self.piece.square // 10, self.piece.board.nbranks - 1 - self.piece.square % 10
 
-            self._row = row
-            self._col = col
-
-        super().wake()
+                square_size = self.piece.board.display.square_size
+                self.set_pos(topleft=(col * square_size, row * square_size))

@@ -211,15 +211,10 @@ class BoardDisplay(bp.Zone):
         self.back_layer = bp.Layer(self, name="back_layer", weight=3)
 
         # This grid layer contains the pieces, captured and on the board ones
-        self.pieces_layer = bp.GridLayer(self, PieceWidget, name="pieces_layer", weight=4,
+        self.pieces_layer_TBR = bp.GridLayer(self, PieceWidget, name="pieces_layer_TBR", weight=4,
                                          row_height=self.square_size, col_width=self.square_size,
                                          nbcols=8, nbrows=board.nbranks)
-        self.flip_waitline = bp.GridLayer(self, PieceWidget, name="flip_waitline", weight=4,
-                                          row_height=self.square_size, col_width=self.square_size,
-                                          nbcols=8, nbrows=board.nbranks)
-        self.flipped_pieces_layer = bp.GridLayer(self, PieceWidget, name="flipped_pieces_layer", weight=4,
-                                                 row_height=self.square_size, col_width=self.square_size,
-                                                 nbcols=8, nbrows=board.nbranks)
+        self.pieces_layer = bp.Layer(self, PieceWidget, name="pieces_layer", weight=4)
 
         # This layer is just in front of the pieces
         self.front_layer = bp.Layer(self, name="front_layer", weight=5)
@@ -264,21 +259,10 @@ class BoardDisplay(bp.Zone):
         with bp.paint_lock:  # freezes the display during the operation
 
             pws = tuple(self.all_piecewidgets)
-            swapped = []
             for pw in pws:
-
-                if pw in swapped:
-                    continue
                 if pw.piece.is_captured:
                     continue
-
-                p2 = self.board[69 + self.board.nbranks - pw.piece.square]
-                if p2 == 0:
-                    pw.update_from_piece_movement()
-                else:
-                    pw2 = p2.widget
-                    self.pieces_layer.swap(pw, pw2)
-                    swapped.append(pw2)
+                pw.update_from_piece_movement()
 
             for bonus in self.board.bonus:
                 nsquare = 69 + self.board.nbranks - bonus.square if self.orientation == "b" else bonus.square

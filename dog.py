@@ -14,8 +14,6 @@ class Dog(Piece):
 
         self.leash = None
 
-    is_leashed = property(lambda self: (self.leash is not None) and (not self.leash.is_captured))
-
     def capture(self, capturer):
 
         super().capture(capturer)
