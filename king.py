@@ -1,19 +1,19 @@
 
 
-from piece import Piece
+from mainpiece import MainPiece
 
 
 # TODO : King cannot ride a trap ? Or yes ?
 
 
-class King(Piece):
+class King(MainPiece):
 
     LETTER = "k"
     moves = ((-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1))
 
     def __init__(self, *args, **kwargs):
 
-        Piece.__init__(self, *args, **kwargs)
+        MainPiece.__init__(self, *args, **kwargs)
 
         # [long castle right, short castle right, turn_number_of_first_move]
         self.castle_rights = [False, False, None]
@@ -27,7 +27,7 @@ class King(Piece):
 
     def go_to(self, square):
 
-        Piece.go_to(self, square)
+        MainPiece.go_to(self, square)
 
         if self.castle_rights[2] is None:
             self.castle_rights[2] = self.board.current_move.turn_number
@@ -80,7 +80,7 @@ class King(Piece):
 
             can_short_castle = False
             piece_at_right_corner = self.board[self.square + 30]
-            if isinstance(piece_at_right_corner, Piece) and piece_at_right_corner.LETTER == "r" and piece_at_right_corner.color:
+            if isinstance(piece_at_right_corner, MainPiece) and piece_at_right_corner.LETTER == "r" and piece_at_right_corner.color:
                 can_short_castle = True
                 for move in (10, 20):
                     square = self.square + move
@@ -95,7 +95,7 @@ class King(Piece):
 
             can_long_castle = False
             piece_at_left_corner = self.board[self.square - 40]
-            if isinstance(piece_at_left_corner, Piece) and piece_at_left_corner.LETTER == "r":
+            if isinstance(piece_at_left_corner, MainPiece) and piece_at_left_corner.LETTER == "r":
                 can_long_castle = True
                 for move in (-10, -20):
                     square = self.square + move

@@ -1,9 +1,9 @@
 
 
-from piece import RollingPiece
+from mainpiece import RollingMainPiece
 
 
-class Queen(RollingPiece):
+class Queen(RollingMainPiece):
 
     LETTER = "q"
     moves = ((-1, -1), (-1, 1), (1, 1), (1, -1), (1, 0), (0, 1), (-1, 0), (0, -1))

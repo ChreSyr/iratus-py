@@ -1,17 +1,17 @@
 
 
-from piece import Piece
+from mainpiece import MainPiece
 from dog import EnragedDog
 
 
-class Leash(Piece):
+class Leash(MainPiece):
 
     LETTER = "l"
     moves = ((-1, -1), (1, -1), (1, 1), (-1, 1))  # , (-2, -2), (2, -2), (2, 2), (-2, 2))
 
     def __init__(self, board, color, square, dog):
 
-        Piece.__init__(self, board, color, square)
+        MainPiece.__init__(self, board, color, square)
 
         assert dog.leash is None
 

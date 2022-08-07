@@ -1,9 +1,9 @@
 
 
-from piece import RollingPiece
+from mainpiece import RollingMainPiece
 
 
-class Bishop(RollingPiece):
+class Bishop(RollingMainPiece):
 
     LETTER = "b"
     moves = ((-1, -1), (-1, 1), (1, 1), (1, -1))

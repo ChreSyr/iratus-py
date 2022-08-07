@@ -1,9 +1,9 @@
 
 
-from piece import Piece
+from mainpiece import MainPiece
 
 
-class Stone(Piece):
+class Stone(MainPiece):
 
     LETTER = "s"
     moves = ((-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1))
@@ -30,7 +30,7 @@ class Stone(Piece):
                     raise AssertionError
                 piece_on_attainable_square = self.board[square + d]
 
-                if piece_on_attainable_square is 0:
+                if piece_on_attainable_square == 0:
                     rolling_square = square + d
                     x += dx
                     y += dy
@@ -46,10 +46,9 @@ class Stone(Piece):
 
     def can_be_captured_by(self, piece, move):
 
-        # A king, queen, rook, bishop, leash or enraged dog can roll a stone
-        # pawns and leashed dog magange this themselves, only have to care about knight
-        # if piece.LETTER not in ('k', 'q', 'r', 'b', 'l', 'ed'):
-        #     return False
+        # A pawn can't pull a stone
+        if piece.LETTER == 'p':
+            return False
 
         # Cannot pull a stone if there is a piece behind
         # Only works if all the move is vertical, horizontal or diagonal (knights can't roll stones)
@@ -123,9 +122,10 @@ class Stone(Piece):
                     d += dx * 10 + dy
                     rolling = True
 
-                elif piece_on_attainable_square.is_trapped and piece_on_attainable_square.color == self.color:
-                    valid_move = d
-                    rolling = False
+                elif piece_on_attainable_square.malus and piece_on_attainable_square.malus.LETTER == "c":  # in a cage
+                    if piece_on_attainable_square.color == self.color:
+                        valid_move = d
+                        rolling = False
 
             if valid_move is not None:
                 self.valid_moves += (valid_move,)

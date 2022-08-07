@@ -18,7 +18,7 @@ class Game:
         self.turn = "w"
 
         # for 50-moves rule
-        self.counter50rule = 0
+        # self.counter50rule = 0
 
         # w is white won, b is black won, d is drawn
         self.result = None
@@ -42,7 +42,7 @@ class Game:
 
         if game_state == "checkmate":
             self.history[-1].notation += "#"
-        elif game_state == "check":
+        elif self.board.king[self.turn].in_check:
             self.history[-1].notation += "+"
 
         # TODO : cage, compact edog notation
@@ -59,17 +59,6 @@ class Game:
             bp.Timer(.2, end_dialog.open).start()
 
     def get_game_state(self):
-
-        # Draw by 50-moves rule
-        last_move = self.history[-1]
-        if self.board[last_move.end_square].LETTER == "p":
-            self.counter50rule = 0
-        elif last_move.captures:
-            self.counter50rule = 0
-        else:
-            self.counter50rule += 1
-        if self.counter50rule >= 50:
-            return "draw by 50-moves rule"
 
         # Draw by insufficient material
         remaining_pieces = {"w": [], "b": []}
@@ -103,13 +92,14 @@ class Game:
                 return "draw by repetition"
 
         game_state = "keep going"
-        if self.board.king[self.turn].in_check:
-            game_state = "check"
 
         for piece in self.board.set[self.turn]:
             if not piece.is_captured and piece.valid_moves:
-
                 # Still at least one valid move
+
+                if self.history:
+                    if self.history[-1].counter50rule > 50:
+                        return "draw by 50-moves rule"
 
                 return game_state
 

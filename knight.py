@@ -1,9 +1,9 @@
 
 
-from piece import Piece
+from mainpiece import MainPiece
 
 
-class Knight(Piece):
+class Knight(MainPiece):
 
     LETTER = "n"
     moves = ((-2, -1), (-1, -2), (-1, 2), (1, 2), (2, 1), (2, -1), (-2, 1), (1, -2))

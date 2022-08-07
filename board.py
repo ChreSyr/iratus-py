@@ -1,6 +1,8 @@
 
 import baopig as bp
-from piece import Bonus, Piece, PieceMovingTwice, PieceWidget, file_dict
+from bonus import Bonus
+from piece import file_dict
+from mainpiece import MainPiece, MainPieceWidget
 from queen import Queen
 from rook import Rook
 from bishop import Bishop
@@ -21,8 +23,9 @@ class Board:
 
         # All the pieces, captured or not
         self.pieces = ()
-        self.bonus = ()  # traps, cages, dynamites...
         self.set = {"w": (), "b": ()}
+        self.bonus = ()  # traps, cages, dynamites...
+        self.bonus_set = {"w": (), "b": ()}
 
         # List of all the square
         # TODO : remove ? is it only used by assertions ?
@@ -51,7 +54,7 @@ class Board:
 
         if value != 0:
 
-            assert isinstance(value, Piece), value
+            assert isinstance(value, MainPiece), value
 
             if self._squares[value.square] is not value:
                 try:
@@ -67,15 +70,20 @@ class Board:
     def _create_pieces(self):
         """ Called once at construction """
 
-    def add(self, piece):
+    def add_piece(self, piece):
 
-        if isinstance(piece, Piece):
+        if isinstance(piece, MainPiece):
+            # self[piece.square] = piece  # TODO
             self._squares[piece.square] = piece  # only time we directly use self._squares
-            self.pieces += (piece,)
-            self.set[piece.color] += (piece,)
+            self.pieces += piece,
+            self.set[piece.color] += piece,
+
+        elif isinstance(piece, Bonus):
+            self.bonus += piece,
+            self.bonus_set[piece.color] += piece,
+
         else:
-            assert isinstance(piece, Bonus)
-            self.bonus += (piece,)
+            raise ValueError
 
     def get_position(self):
         """ Return a GamePosition object for the fat_history """
@@ -210,11 +218,8 @@ class BoardDisplay(bp.Zone):
         # This layer is right behind the pieces
         self.back_layer = bp.Layer(self, name="back_layer", weight=3)
 
-        # This grid layer contains the pieces, captured and on the board ones
-        self.pieces_layer_TBR = bp.GridLayer(self, PieceWidget, name="pieces_layer_TBR", weight=4,
-                                         row_height=self.square_size, col_width=self.square_size,
-                                         nbcols=8, nbrows=board.nbranks)
-        self.pieces_layer = bp.Layer(self, PieceWidget, name="pieces_layer", weight=4)
+        # This layer contains the pieces on the board
+        self.pieces_layer = bp.Layer(self, MainPieceWidget, name="pieces_layer", weight=4)
 
         # This layer is just in front of the pieces
         self.front_layer = bp.Layer(self, name="front_layer", weight=5)
@@ -248,8 +253,6 @@ class BoardDisplay(bp.Zone):
 
         self.orientation = "w"
 
-        self.all_piecewidgets = []
-
     def flip(self, animate=True):
 
         self.orientation = "b" if self.orientation == "w" else "w"
@@ -258,19 +261,11 @@ class BoardDisplay(bp.Zone):
 
         with bp.paint_lock:  # freezes the display during the operation
 
-            pws = tuple(self.all_piecewidgets)
-            for pw in pws:
-                if pw.piece.is_captured:
-                    continue
-                pw.update_from_piece_movement(animate=animate)
-
-            for bonus in self.board.bonus:
-                nsquare = 69 + self.board.nbranks - bonus.square if self.orientation == "b" else bonus.square
-                x, y = nsquare // 10, nsquare % 10
-                bonus.trap_widget.set_pos(topleft=(x * self.square_size, y * self.square_size))
-                bonus.cage_widget.set_pos(topleft=(x * self.square_size, y * self.square_size))
-
-                # TODO : bonus.widget.set_pos(topleft=(x * self.square_size, y * self.square_size))
+            for pack in self.board.pieces, self.board.bonus:
+                for thing in pack:
+                    widget = thing.widget
+                    if widget.is_awake:
+                        widget.update_from_piece_movement(animate=animate)
 
     def select(self, widget):
 
@@ -345,17 +340,23 @@ class Move:
         self.turn = board[start_square].color
         self.next_turn = board[start_square].enemy_color
         self.turn_number = 1
+        self.counter50rule = 0
 
         if self.board.game.history:
             last_move = self.board.game.history[-1]
             self.turn_number = last_move.turn_number
             if last_move.turn != self.turn:
                 self.turn_number += .5
+                self.counter50rule = last_move.counter50rule + .5
 
         capture = board[end_square]
         if capture != 0:
             self.captures.append(capture)
             self.execute_commands(capture.capture(board[start_square]))
+
+        # Draw by 50-moves rule
+        if board[start_square].LETTER == "p":
+            self.counter50rule = 0
 
     # piece = property(lambda self: self.board[self.start_square])
     # capture = property(lambda self: self.board[self.end_square])
@@ -373,6 +374,7 @@ class Move:
             elif command == "capture":
                 self.captures.append(args[0])
                 self.execute_commands(args[0].capture(None))
+                self.counter50rule = 0
             elif command == "notation":
                 self.notation = args[0]
             elif command == "set_next_turn":

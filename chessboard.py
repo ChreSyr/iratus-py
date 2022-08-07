@@ -1,8 +1,6 @@
 
 
-import baopig as bp
-from board import Board, BoardDisplay, BoardPosition, VM_Watermark
-from piece import Piece, PieceWidget, file_dict
+from board import Board, BoardDisplay, BoardPosition
 from pawn import Pawn
 from knight import Knight
 from bishop import Bishop

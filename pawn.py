@@ -1,15 +1,15 @@
 
 
-from piece import Piece
+from mainpiece import MainPiece
 
 
-class Pawn(Piece):
+class Pawn(MainPiece):
 
     LETTER = "p"
 
     def __init__(self, *args, **kwargs):
 
-        Piece.__init__(self, *args, **kwargs)
+        MainPiece.__init__(self, *args, **kwargs)
 
         if self.color == "b":
             self.moves = ((0, 1), (0, 2))

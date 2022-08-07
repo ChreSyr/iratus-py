@@ -1,16 +1,16 @@
 
 
-from piece import Piece, PieceMovingTwice
+from mainpiece import MainPiece, MainPieceMovingTwice
 
 
-class Dog(Piece):
+class Dog(MainPiece):
 
     LETTER = "d"
     moves = ((-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1))
 
     def __init__(self, board, color, square):
 
-        Piece.__init__(self, board, color, square)
+        MainPiece.__init__(self, board, color, square)
 
         self.leash = None
 
@@ -54,7 +54,7 @@ class Dog(Piece):
                 self.valid_moves += (from_dog_to_leash + d,)
 
 
-class EnragedDog(PieceMovingTwice):
+class EnragedDog(MainPieceMovingTwice):
 
     # TODO : when an enraged dog gets trapped on first move ?
 

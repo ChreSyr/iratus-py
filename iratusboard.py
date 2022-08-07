@@ -1,9 +1,6 @@
 
-
-import baopig as bp
-from board import Board, BoardDisplay, BoardPosition, Move
-from piece import Piece, PieceWidget
-from trap import Trap, TrapWidget, CageWidget
+from board import Board, BoardDisplay, BoardPosition
+from trap import Trap
 from pawn import TornadoPawn
 from stone import Stone
 from knight import Knight

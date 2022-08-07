@@ -1,7 +1,7 @@
 
 
 import baopig as bp
-from piece import Bonus
+from bonus import Bonus
 
 
 class Trap(Bonus):
@@ -10,7 +10,7 @@ class Trap(Bonus):
 
     def __init__(self, board, color, square):
 
-        Bonus.__init__(self, board, square)
+        Bonus.__init__(self, board, color, square)
 
         self.color = color
         self.trap_widget = None
@@ -29,7 +29,7 @@ class Trap(Bonus):
         if self.trap_widget is not None:
             self.trap_widget.hide()
 
-    def init_display(self):
+    def init_display_TBR(self):
 
         self.trap_widget = TrapWidget(self)
         self.cage_widget = CageWidget(self)
