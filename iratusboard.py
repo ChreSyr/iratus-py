@@ -2,7 +2,7 @@
 from board import Board, BoardDisplay, BoardPosition
 from dynamite import Dynamite
 from trap import Trap
-from pawn import TornadoPawn
+from pawn import TorpedoPawn
 from stone import Stone
 from knight import Knight
 from bishop import Bishop
@@ -23,9 +23,9 @@ class IratusBoard(Board):
 
         # Creating pieces
         for square in range(2, 73, 10):
-            TornadoPawn(self, "b", square)
+            TorpedoPawn(self, "b", square)
         for square in range(7, 78, 10):
-            TornadoPawn(self, "w", square)
+            TorpedoPawn(self, "w", square)
 
         self.stone = {"b": (Stone(self, "b", 0), Stone(self, "b", 70)),
                       "w": (Stone(self, "w", 9), Stone(self, "w", 79))}

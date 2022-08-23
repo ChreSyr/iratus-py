@@ -105,7 +105,7 @@ class Pawn(MainPiece):
             self.bonus.update_ally_vm()
 
 
-class TornadoPawn(Pawn):  # Pawns for iratus
+class TorpedoPawn(Pawn):  # Pawns for iratus
 
     def __init__(self, *args, **kwargs):
 
