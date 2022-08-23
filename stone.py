@@ -41,7 +41,7 @@ class Stone(MainPiece):
 
         if rolling_square is not None:
             roll = "before_move", self.square, rolling_square
-            uncapture = "uncapture", self
+            uncapture = "anticapture", self
             return roll, uncapture
 
     def can_be_captured_by(self, piece, move):
@@ -79,7 +79,7 @@ class Stone(MainPiece):
             return roll
 
         else:
-            super().capture(capturer)
+            return super().capture(capturer)
 
     def update_valid_moves(self):
 
@@ -112,7 +112,7 @@ class Stone(MainPiece):
 
                     # if there is an enemy trap on that square, we can't ride it
                     if hasattr(self.board, "trap"):
-                        if True in (trap.state == 0 and trap.square is square
+                        if True in (trap.is_availible and trap.square is square
                                     for trap in self.board.trap[self.enemy_color]):
                             continue
 
@@ -129,3 +129,6 @@ class Stone(MainPiece):
 
             if valid_move is not None:
                 self.valid_moves += (valid_move,)
+
+        if self.bonus:
+            self.bonus.update_ally_vm()

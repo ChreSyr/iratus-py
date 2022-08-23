@@ -50,8 +50,11 @@ class Dog(MainPiece):
             dx = end_square // 10 - start_square // 10
             dy = end_square % 10 - start_square % 10
 
-            if self.can_capture(self.board[square], (dx, dy)):
+            if self.can_go_to(square, (dx, dy)):
                 self.valid_moves += (from_dog_to_leash + d,)
+
+        if self.bonus:
+            self.bonus.update_ally_vm()
 
 
 class EnragedDog(MainPieceMovingTwice):

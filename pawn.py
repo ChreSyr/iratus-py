@@ -24,7 +24,7 @@ class Pawn(MainPiece):
 
     def go_to(self, square):
 
-        super().go_to(square)
+        commands = super().go_to(square)
 
         self._has_moved = square % 10 is not self.start_rank
 
@@ -42,7 +42,9 @@ class Pawn(MainPiece):
             if self.board[last_move.end_square] is piece_behind and \
                     abs(last_move.start_square - last_move.end_square) == 2:
                 en_passant = "capture", piece_behind
-                return en_passant,
+                return commands + (en_passant,)
+
+        return commands
 
     def redo(self, square):
 
@@ -96,8 +98,11 @@ class Pawn(MainPiece):
                     if self.board[last_move.end_square] is piece_aside and \
                             abs(last_move.start_square - last_move.end_square) == 2:
                         self.valid_moves += (d,)
-            elif self.can_capture(piece_on_attainable_square, move):
+            elif self.can_go_to(square, move):
                 self.valid_moves += (d,)
+
+        if self.bonus:
+            self.bonus.update_ally_vm()
 
 
 class TornadoPawn(Pawn):  # Pawns for iratus
@@ -133,7 +138,7 @@ class TornadoPawn(Pawn):  # Pawns for iratus
 
                     # if there is an enemy trap on that square, we can't ride it
                     if hasattr(self.board, "trap"):
-                        if True in (trap.state == 0 and trap.square is square
+                        if True in (trap.is_availible and trap.square is square
                                     for trap in self.board.trap[self.enemy_color]):
                             continue
 
@@ -160,5 +165,8 @@ class TornadoPawn(Pawn):  # Pawns for iratus
                         if self.board[last_move.end_square] is piece_aside and \
                                 abs(last_move.start_square - last_move.end_square) == 2:
                             self.valid_moves += (d,)
-                elif self.can_capture(piece_on_attainable_square, move):
+                elif self.can_go_to(square, move):
                     self.valid_moves += (d,)
+
+        if self.bonus:
+            self.bonus.update_ally_vm()

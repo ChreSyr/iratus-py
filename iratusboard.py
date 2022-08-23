@@ -1,5 +1,6 @@
 
 from board import Board, BoardDisplay, BoardPosition
+from dynamite import Dynamite
 from trap import Trap
 from pawn import TornadoPawn
 from stone import Stone
@@ -28,8 +29,8 @@ class IratusBoard(Board):
 
         self.stone = {"b": (Stone(self, "b", 0), Stone(self, "b", 70)),
                       "w": (Stone(self, "w", 9), Stone(self, "w", 79))}
-        self.trap = {"b": (Trap(self, "b", 30), Trap(self, "b", 40)),
-                     "w": (Trap(self, "w", 39), Trap(self, "w", 49))}
+        self.trap = {"b": (Dynamite(self, "b", 30), Trap(self, "b", 40)),
+                     "w": (Dynamite(self, "w", 39), Trap(self, "w", 49))}
         self.knight = {"b": (Knight(self, "b", 11), Knight(self, "b", 61)),
                        "w": (Knight(self, "w", 18), Knight(self, "w", 68))}
         self.bishop = {"b": (Bishop(self, "b", 21), Bishop(self, "b", 51)),
@@ -117,8 +118,8 @@ class IratusBoardPosition(BoardPosition):
 
         BoardPosition.__init__(self, board, turn)
         self.traps = {
-            "w": tuple((wtrap.square, wtrap.state) for wtrap in board.trap["w"]),
-            "b": tuple((btrap.square, btrap.state) for btrap in board.trap["b"])
+            "w": tuple((wtrap.square, wtrap.is_availible) for wtrap in board.trap["w"]),
+            "b": tuple((btrap.square, btrap.is_availible) for btrap in board.trap["b"])
         }
         self._eq_attributes += ("traps",)
 
@@ -147,8 +148,7 @@ class IratusBoardCalculator(IratusBoard):
             clone_piece.copy(piece)
 
         for trap, clone_trap in self.traps_correspondence.items():
-            clone_trap.square = trap.square
-            clone_trap.state = trap.state
+            clone_trap.square = trap.square  # TODO : copy
 
     def get_simulated_piece(self, piece):
 

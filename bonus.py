@@ -14,53 +14,38 @@ class Bonus(Piece):
 
         Piece.__init__(self, board, color, square)
 
-        self.ally = None
+        self._ally = None
 
-    def move(self):
+    ally = property(lambda self: self._ally)
+    is_availible = property(lambda self: self._ally is None)
 
-        if piece.trap is not None and piece.trap.trap_widget.is_hidden:
-            move.unequiped_trap = piece.trap
-            piece.trap.trap_widget.show()
-            piece.unequip()
+    def _handle_ally_widget_motion(self):
 
-        # Trap stuff
-        if piece.bonus is None:
-            # Trap equipement
-            for bonus in self.bonus[piece.color]:
-                if bonus.ally is None and bonus.square == move.end_square:
-                    piece.equip(bonus)
-                    move.trap_equipement = True
-        else:
-            piece.bonus.move(move.end_square)
+        if self.widget.is_awake:
+            self.widget.set_pos(topleft=self._ally.widget.rect.topleft)
+            self.widget.motion_end = self.widget.motion_pos = self.widget.rect.topleft
 
-    def undo(self):
+    def handle_allycapture(self, capturer):
 
-        if move.trap_equipement is True:
-            assert piece.trap is not None
-            piece.unequip()
+        self.is_captured = True
 
-        if move.trap_capture is True:
-            assert piece.cage is not None
-            piece.cage.untrap()
+        if self.widget is not None:
+            self.widget.sleep()
 
-        if move.broken_cage is not None:
-            assert move.capture.LETTER == "s"
-            move.capture, piece = piece, move.capture
-            move.broken_cage.unrelease(move.capture)
-            # self[move.start_square] = piece
-            piece.uncapture()
+    def handle_allyuncapture(self):
 
-        ...
+        self.is_captured = False
 
-        if piece.trap is not None:
-            piece.trap.move(move.start_square)
+        if self.widget is not None:
+            self.widget.wake()
 
-        if move.destroyed_trap is not None:
-            assert piece.LETTER == "l"
-            move.destroyed_trap.undestroy()
-            if move.capture != 0:
-                move.capture.equip(move.destroyed_trap)
+    def set_ally(self, piece):
 
-        if move.unequiped_trap is not None:
-            assert move.unequiped_trap.square is piece.square
-            piece.equip(move.unequiped_trap)
+        if self._ally is not None and self._ally.widget is not None:
+            self._ally.widget.signal.MOTION.disconnect(self._handle_ally_widget_motion)
+        self._ally = piece
+        if piece is not None and piece.widget is not None:
+            piece.widget.signal.MOTION.connect(self._handle_ally_widget_motion, owner=self.widget)
+
+    def update_ally_vm(self):
+        """ Upadte self.ally.valid_moves or antiking_squares """

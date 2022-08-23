@@ -80,6 +80,8 @@ class MainPieceWidget(PieceWidget, bp.Focusable):
 class MainPiece(Piece):
 
     WIDGET_CLASS = MainPieceWidget
+
+    # TODO : move to classes overriding it
     ATTR_TO_COPY = Piece.ATTR_TO_COPY + ("moves",)
     METH_TO_COPY = Piece.METH_TO_COPY + ("capture", "redo", "uncapture", "undo", "update_valid_moves")
 
@@ -96,20 +98,29 @@ class MainPiece(Piece):
         self.bonus = None
         self.malus = None
 
-    def can_capture(self, piece, move):
+    def can_be_captured_by(self, piece, move):
+        """ Only called by piece.can_go_to() """
+
+        return True
+
+    def can_equip(self, bonus):
+
+        return bonus.color == self.color and bonus.is_captured is False
+
+    def can_go_to(self, square, move):
+
+        piece = self.board[square]
 
         if piece == 0:
+            for bonus in self.board.bonus:
+                if bonus.is_captured is False and bonus.square == square:
+                    return self.can_equip(bonus)
             return True
 
         if piece.color == self.color:
             return False
 
         return piece.can_be_captured_by(self, move)
-
-    def can_be_captured_by(self, piece, move):
-        """ Only called by piece.can_capture() """
-
-        return True
 
     def capture(self, capturer):
         # The board call this function when this piece is captured
@@ -124,6 +135,9 @@ class MainPiece(Piece):
         if self.widget is not None:
             self.widget.sleep()
 
+        if self.bonus is not None:
+            return self.bonus.handle_allycapture(capturer)
+
     def go_to(self, square):
         """
         Should only be called by the board
@@ -131,29 +145,52 @@ class MainPiece(Piece):
 
         if self.is_captured:
             self.square = square
-            return
+            return ()
 
         # Memorizing the new position for the game
         # assert self.board[self.square] is self
         self.board[self.square] = 0  # TODO
+        capture = self.board[square]
         self.board[square] = self  # self.square = square  # TODO
 
         # Memorizing the new position for the display
         if self.widget is not None:
             self.widget.update_from_piece_movement()
 
+        if self.bonus is not None:
+            self.bonus.square = square
+
+        elif capture == 0:
+            for bonus in self.board.bonus:
+                if bonus.square == square:
+                    if self.can_equip(bonus):
+                        set_bonus = "set_bonus", self, bonus
+                        return set_bonus,
+                    break
+
+        return ()
+
     def redo(self, square):
 
         self.go_to(square)
 
-    def set_bonus(self, trap):  # TODO
+    def set_bonus(self, bonus):
 
-        assert trap.color == self.color
-        assert self.trap is None
-        assert trap.ally is None
+        if self.widget:
+            print(f"SET BONUS {bonus} TO {self}")
 
-        self.trap = trap
-        trap.ally = self
+        if bonus is not None:
+            assert bonus.color == self.color
+            assert bonus._ally is None
+            bonus.set_ally(self)
+
+        if self.bonus is None:
+            assert bonus is not None
+        else:
+            assert bonus is None
+            self.bonus.set_ally(None)
+
+        self.bonus = bonus
 
     def uncapture(self):
         # The board call this function when this piece was captured but "undo" is done
@@ -165,22 +202,15 @@ class MainPiece(Piece):
         self.is_captured = False
 
         if self.widget is not None:
-            self.widget.set_lock(pos=False)
             self.widget.wake()
+
+        if self.bonus is not None:
+            self.bonus.handle_allyuncapture()
 
     def undo(self, move):
 
         assert self.board[move.end_square] is self
         self.go_to(move.start_square)
-
-    def unequip(self):
-
-        # TODO : find a graphic way to unequip the trap during a move
-
-        assert self.trap is not None
-
-        self.trap.ally = None
-        self.trap = None
 
     def update_valid_moves(self):
 
@@ -205,44 +235,11 @@ class MainPiece(Piece):
                 raise AssertionError
             self.antiking_squares += (square,)
 
-            if self.can_capture(self.board[square], move):
-                self.valid_moves += (d,)
-            continue
-
-            piece_on_attainable_square = self.board[square]
-            # if no piece is on the square
-            if piece_on_attainable_square == 0:
-
-                # if there is an enemy trap on that square, we can't ride it
-                # TODO
-                if hasattr(self.board, "trap"):
-                    if True in (trap.state == 0 and trap.square is square
-                                for trap in self.board.trap[self.enemy_color]):
-                        continue
-
+            if self.can_go_to(square, move):
                 self.valid_moves += (d,)
 
-            elif piece_on_attainable_square.color != self.color and False:
-
-                # Cage
-                # TODO
-                if piece_on_attainable_square.is_trapped:
-                    continue
-
-                # If it is a stone, pawns, knights and leashed dogs cannot move it
-                # pawns and leashed dog magange this themselves, only have to care about knight
-                if piece_on_attainable_square.LETTER == "s":
-                    if self.LETTER == "n":
-                        continue
-                    # Cannot pull a stone if there is a piece behind
-                    # Only works if all the rolling pieces have 1 square moves
-                    if self.board.has_square(x + 2 * dx, y + 2 * dy):
-                        piece_behind_stone = self.board[square + dx * 10 + dy]
-                        if piece_behind_stone != 0:
-                            continue
-
-            elif self.can_capture(piece_on_attainable_square, move):
-                self.valid_moves += (d,)
+        if self.bonus:
+            self.bonus.update_ally_vm()
 
 
 class RollingMainPiece(MainPiece):
@@ -266,17 +263,18 @@ class RollingMainPiece(MainPiece):
 
             rolling = True
             while rolling:
-                rolling = False
 
                 if not self.board.has_square(x + dx, y + dy):
-                    continue
+                    break
 
                 self.antiking_squares += (square,)
 
                 piece_on_attainable_square = self.board[square]
 
-                if self.can_capture(piece_on_attainable_square, move):
+                if self.can_go_to(square, move):
                     self.valid_moves += (d,)
+                else:
+                    rolling = False
 
                 if piece_on_attainable_square == 0:
                     # we can roll one step further
@@ -284,7 +282,11 @@ class RollingMainPiece(MainPiece):
                     y += dy
                     d += dx * 10 + dy
                     square = start_square + d
-                    rolling = True
+                else:
+                    rolling = False
+
+        if self.bonus:
+            self.bonus.update_ally_vm()
 
 
 class MainPieceMovingTwice(MainPiece):
@@ -301,11 +303,13 @@ class MainPieceMovingTwice(MainPiece):
 
     def go_to(self, square):
 
-        MainPiece.go_to(self, square)
+        commands = MainPiece.go_to(self, square)
 
         self.still_has_to_move = not self.still_has_to_move
         if self.still_has_to_move:
-            return ("set_next_turn", self.color),
+            return commands + (("set_next_turn", self.color),)
+
+        return commands
 
     def update_valid_moves(self):
 
@@ -330,7 +334,7 @@ class MainPieceMovingTwice(MainPiece):
                 raise AssertionError
             self.antiking_squares += (square,)
 
-            if self.can_capture(self.board[square], move):
+            if self.can_go_to(square, move):
                 self.valid_moves += (d,)
 
                 x2 = square // 10
@@ -348,3 +352,6 @@ class MainPieceMovingTwice(MainPiece):
                         if square2 in self.antiking_squares:
                             continue
                         self.antiking_squares += (square2,)
+
+        if self.bonus:
+            self.bonus.update_ally_vm()

@@ -102,9 +102,8 @@ class Board:
 
         move = Move(self, start_square, end_square)
         self.current_move = move
-        piece = self[start_square]
 
-        move.execute_commands(piece.go_to(move.end_square))
+        move.execute_commands(move.piece.go_to(move.end_square))
         move.init_notation()
 
         return move
@@ -133,8 +132,12 @@ class Board:
             # piece.transform(new_class)
             self[transformation[0]].transform(transformation[2])
 
+        move.redo_commands()
+
     def undo(self, move):
         """ Undo the last move """
+
+        move.undo_commands()
 
         for transformation in move.transformations:
             # square = transformation[0]
@@ -147,12 +150,18 @@ class Board:
             self.undo(after_move)
 
         # piece = self[move.end_square]
-        self[move.end_square].undo(move)
+        if move.piece.is_captured:
+            assert move.piece in move.captures
+            move.piece.uncapture()
+        move.piece.undo(move)
 
         for before_move in move.before_moves:
             self.undo(before_move)
 
         for capture in move.captures:
+            if not capture.is_captured:
+                assert capture is move.piece
+                continue
             capture.uncapture()
 
     def update_pieces_vm(self):
@@ -326,6 +335,8 @@ class Move:
         self.start_square = start_square
         self.end_square = end_square
 
+        self.piece = board[start_square]
+        self.commands = ()
         self.trap_equipement = None
         self.trap_capture = None
         self.unequiped_trap = None
@@ -355,19 +366,34 @@ class Move:
             self.execute_commands(capture.capture(board[start_square]))
 
         # Draw by 50-moves rule
-        if board[start_square].LETTER == "p":
+        if self.piece.LETTER == "p":  # 0 when the capturer experienced a backfire
             self.counter50rule = 0
 
     # piece = property(lambda self: self.board[self.start_square])
     # capture = property(lambda self: self.board[self.end_square])
 
     def execute_commands(self, commands):
+        """
+        Commands & syntax :
+
+            "anticapture", MainPiece
+            "after_move", int, int
+            "before_move", int, int
+            "capture", MainPiece
+            "notation", str
+            "set_bonus", MainPiece, Bonus
+            "set_next_turn", str
+            "transform", MainPiece, class
+
+        """
 
         if commands is None:
             return
 
         for command, *args in commands:
-            if command == "after_move":
+            if command == "anticapture":
+                self.captures.remove(args[0])
+            elif command == "after_move":
                 self.after_moves.append(self.board.move(args[0], args[1]))
             elif command == "before_move":
                 self.before_moves.append(self.board.move(args[0], args[1]))
@@ -377,6 +403,11 @@ class Move:
                 self.counter50rule = 0
             elif command == "notation":
                 self.notation = args[0]
+            elif command == "set_bonus":
+                piece = args[0]
+                bonus = args[1]
+                piece.set_bonus(bonus)
+                self.commands += (command, *args),
             elif command == "set_next_turn":
                 self.next_turn = args[0]
             elif command == "transform":
@@ -387,8 +418,6 @@ class Move:
                 transformation = square, old_class, new_class
                 self.transformations.append(transformation)
                 piece.transform(new_class)
-            elif command == "uncapture":
-                self.captures.remove(args[0])
             else:
                 raise ValueError(command)
 
@@ -399,7 +428,7 @@ class Move:
             return
 
         n = ""
-        piece = self.board[self.end_square]
+        piece = self.piece
 
         # the name of the piece, not for pawns
         if piece.LETTER != "p":
@@ -452,6 +481,25 @@ class Move:
         n += piece.coordinates
 
         self.notation = n
+
+    def redo_commands(self):
+
+        for command, *args in self.commands:
+            if command == "set_bonus":
+                # piece = args[0]
+                # bonus = args[1]
+                args[0].set_bonus(args[1])
+            else:
+                raise ValueError(command)
+
+    def undo_commands(self):
+
+        for command, *args in self.commands:
+            if command == "set_bonus":
+                # piece = args[0]
+                args[0].set_bonus(None)
+            else:
+                raise ValueError(command)
 
 
 class VM_Watermark:

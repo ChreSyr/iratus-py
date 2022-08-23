@@ -20,6 +20,17 @@ class King(MainPiece):
 
     in_check = property(lambda self: self.square_is_under_check(self.square))
 
+    def can_equip(self, bonus):
+
+        return False
+
+    def can_go_to(self, square, move):
+
+        for piece in self.board.set[self.enemy_color]:
+            if square in piece.antiking_squares:
+                return False
+        return super().can_go_to(square, move)
+
     def copy(self, original):
 
         super().copy(original)
@@ -27,7 +38,7 @@ class King(MainPiece):
 
     def go_to(self, square):
 
-        MainPiece.go_to(self, square)
+        commands = MainPiece.go_to(self, square)
 
         if self.castle_rights[2] is None:
             self.castle_rights[2] = self.board.current_move.turn_number
@@ -36,11 +47,13 @@ class King(MainPiece):
             if file == 6 and self.castle_rights[1]:
                 rook_castle = "after_move", square + 10, square - 10
                 notation = "notation", "0-0"
-                return rook_castle, notation
+                return commands + (rook_castle, notation)
             elif file == 2 and self.castle_rights[0]:
                 rook_castle = "after_move", square - 20, square + 10
                 notation = "notation", "0-0-0"
-                return rook_castle, notation
+                return commands + (rook_castle, notation)
+
+        return commands
 
     def square_is_under_check(self, square):
         # if the square is under check, returns True
@@ -53,24 +66,7 @@ class King(MainPiece):
 
     def update_valid_moves(self):
 
-        self.valid_moves = ()
-        self.antiking_squares = ()
-        x = self.square // 10
-        y = self.square % 10
-
-        for move in self.moves:
-
-            dx, dy = move
-
-            if self.board.has_square(x + dx, y + dy):
-                d = dx * 10 + dy
-                square = self.square + d
-                if square not in self.board.existing_squares:
-                    raise AssertionError
-                self.antiking_squares += (square,)
-
-                if self.can_capture(self.board[square], move):
-                    self.valid_moves += (d,)
+        super().update_valid_moves()
 
         if self.castle_rights[2] is None and not self.in_check:
 

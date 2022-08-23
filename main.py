@@ -46,7 +46,7 @@ class IratusApp(bp.Application):
 
         self.images = {}
 
-        for p in ("p", "r", "n", "b", "q", "k") + ("d", "ed", "l", "t", "c", "s"):
+        for p in ("p", "r", "n", "b", "q", "k") + ("d", "ed", "l", "t", "c", "s") + ("dy",):
             for c in ("w", "b"):
                 self.images[c+p] = load("Images/"+c+p+".png")
 

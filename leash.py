@@ -20,16 +20,22 @@ class Leash(MainPiece):
 
     def capture(self, capturer):
 
-        super().capture(capturer)
+        commands = super().capture(capturer)
         if not self.dog.is_captured:
             dog_enrage = "transform", self.dog, EnragedDog
-            return dog_enrage,
+            if commands is None:
+                commands = dog_enrage,
+            else:
+                commands = commands + (dog_enrage,)
+        return commands
 
     def go_to(self, square):
 
         start_square = self.square
-        super().go_to(square)
+        commands = super().go_to(square)
 
         if (abs(self.square % 10 - self.dog.square % 10) > 1) or (abs(self.square // 10 - self.dog.square // 10) > 1):
             dog_pull = "after_move", self.dog.square, start_square
-            return dog_pull,
+            return commands + (dog_pull,)
+
+        return commands
