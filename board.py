@@ -1,8 +1,8 @@
 
 import baopig as bp
-from bonus import Bonus
 from piece import file_dict
 from mainpiece import MainPiece, MainPieceWidget
+from extrapiece import ExtraPiece
 from queen import Queen
 from rook import Rook
 from bishop import Bishop
@@ -24,8 +24,8 @@ class Board:
         # All the pieces, captured or not
         self.pieces = ()
         self.set = {"w": (), "b": ()}
-        self.bonus = ()  # traps, cages, dynamites...
-        self.bonus_set = {"w": (), "b": ()}
+        self.extrapieces = ()  # traps, cages, dynamites...
+        self.extrapieces_set = {"w": (), "b": ()}
 
         # List of all the square
         # TODO : remove ? is it only used by assertions ?
@@ -78,9 +78,9 @@ class Board:
             self.pieces += piece,
             self.set[piece.color] += piece,
 
-        elif isinstance(piece, Bonus):
-            self.bonus += piece,
-            self.bonus_set[piece.color] += piece,
+        elif isinstance(piece, ExtraPiece):
+            self.extrapieces += piece,
+            self.extrapieces_set[piece.color] += piece,
 
         else:
             raise ValueError
@@ -270,7 +270,7 @@ class BoardDisplay(bp.Zone):
 
         with bp.paint_lock:  # freezes the display during the operation
 
-            for pack in self.board.pieces, self.board.bonus:
+            for pack in self.board.pieces, self.board.extrapieces:
                 for thing in pack:
                     widget = thing.widget
                     if widget.is_awake:
@@ -382,6 +382,7 @@ class Move:
             "capture", MainPiece
             "notation", str
             "set_bonus", MainPiece, Bonus
+            "set_malus", MainPiece, Malus
             "set_next_turn", str
             "transform", MainPiece, class
 
@@ -404,9 +405,10 @@ class Move:
             elif command == "notation":
                 self.notation = args[0]
             elif command == "set_bonus":
-                piece = args[0]
-                bonus = args[1]
-                piece.set_bonus(bonus)
+                args[0].set_bonus(args[1])
+                self.commands += (command, *args),
+            elif command == "set_malus":
+                args[0].set_malus(args[1])
                 self.commands += (command, *args),
             elif command == "set_next_turn":
                 self.next_turn = args[0]
@@ -486,9 +488,9 @@ class Move:
 
         for command, *args in self.commands:
             if command == "set_bonus":
-                # piece = args[0]
-                # bonus = args[1]
                 args[0].set_bonus(args[1])
+            elif command == "set_malus":
+                args[0].set_malus(args[1])
             else:
                 raise ValueError(command)
 
@@ -496,8 +498,9 @@ class Move:
 
         for command, *args in self.commands:
             if command == "set_bonus":
-                # piece = args[0]
                 args[0].set_bonus(None)
+            elif command == "set_malus":
+                args[0].set_malus(None)
             else:
                 raise ValueError(command)
 

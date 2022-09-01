@@ -16,9 +16,14 @@ class Dog(MainPiece):
 
     def capture(self, capturer):
 
-        super().capture(capturer)
+        commands = super().capture(capturer)
         if not self.leash.is_captured:
-            return ("capture", self.leash),
+            capture = "capture", self.leash
+            if commands is None:
+                commands = capture,
+            else:
+                commands = commands + (capture,)
+        return commands
 
     def update_valid_moves(self):
 

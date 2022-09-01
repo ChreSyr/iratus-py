@@ -22,7 +22,7 @@ class King(MainPiece):
 
     def can_equip(self, bonus):
 
-        return False
+        return bonus.is_captured
 
     def can_go_to(self, square, move):
 

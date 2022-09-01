@@ -105,16 +105,16 @@ class MainPiece(Piece):
 
     def can_equip(self, bonus):
 
-        return bonus.color == self.color and bonus.is_captured is False
+        return True
 
     def can_go_to(self, square, move):
 
         piece = self.board[square]
 
         if piece == 0:
-            for bonus in self.board.bonus:
-                if bonus.is_captured is False and bonus.square == square:
-                    return self.can_equip(bonus)
+            for extrapiece in self.board.extrapieces:
+                if extrapiece.is_captured is False and extrapiece.square == square:
+                    return self.can_equip(extrapiece) and extrapiece.can_equip(self)
             return True
 
         if piece.color == self.color:
@@ -161,10 +161,10 @@ class MainPiece(Piece):
             self.bonus.square = square
 
         elif capture == 0:
-            for bonus in self.board.bonus:
-                if bonus.square == square:
-                    if self.can_equip(bonus):
-                        set_bonus = "set_bonus", self, bonus
+            for extrapiece in self.board.extrapieces:
+                if extrapiece.square == square:
+                    if self.can_equip(extrapiece) and extrapiece.can_equip(self):
+                        set_bonus = "set_bonus", self, extrapiece
                         return set_bonus,
                     break
 
@@ -191,6 +191,24 @@ class MainPiece(Piece):
             self.bonus.set_ally(None)
 
         self.bonus = bonus
+
+    def set_malus(self, malus):
+
+        if self.widget:
+            print(f"SET MALUS {malus} TO {self}")
+
+        if malus is not None:
+            assert malus.color != self.color
+            assert malus.victim is None
+            malus.set_victim(self)
+
+        if self.malus is None:
+            assert malus is not None
+        else:
+            assert malus is None
+            self.malus.set_victim(None)
+
+        self.malus = malus
 
     def uncapture(self):
         # The board call this function when this piece was captured but "undo" is done

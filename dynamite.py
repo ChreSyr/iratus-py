@@ -1,6 +1,6 @@
 
 
-from bonus import Bonus
+from extrapiece import Bonus
 
 
 class Dynamite(Bonus):
