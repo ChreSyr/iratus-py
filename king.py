@@ -67,13 +67,12 @@ class King(MainPiece):
 
         if self.castle_rights[2] is None and not self.in_check:
 
-            # TODO : remember if the rooks have moved
-
             # castling at right
 
             can_short_castle = False
             piece_at_right_corner = self.board[self.square + 30]
-            if isinstance(piece_at_right_corner, MainPiece) and piece_at_right_corner.LETTER == "r" and piece_at_right_corner.color:
+            if isinstance(piece_at_right_corner, MainPiece) and piece_at_right_corner.LETTER == "r" and \
+                    not piece_at_right_corner.has_moved:
                 can_short_castle = True
                 for move in (10, 20):
                     square = self.square + move
@@ -88,7 +87,8 @@ class King(MainPiece):
 
             can_long_castle = False
             piece_at_left_corner = self.board[self.square - 40]
-            if isinstance(piece_at_left_corner, MainPiece) and piece_at_left_corner.LETTER == "r":
+            if isinstance(piece_at_left_corner, MainPiece) and piece_at_left_corner.LETTER == "r" and \
+                    not piece_at_left_corner.has_moved:
                 can_long_castle = True
                 for move in (-10, -20):
                     square = self.square + move

@@ -1,15 +1,15 @@
 
 
-from mainpiece import MainPiece
+from mainpiece import HasMoved
 
 
-class Pawn(MainPiece):
+class Pawn(HasMoved):
 
     LETTER = "p"
 
     def __init__(self, *args, **kwargs):
 
-        MainPiece.__init__(self, *args, **kwargs)
+        HasMoved.__init__(self, *args, **kwargs)
 
         if self.color == "b":
             self.moves = ((0, 1), (0, 2))
@@ -18,15 +18,11 @@ class Pawn(MainPiece):
             self.moves = ((0, -1), (0, -2))
             self.attacking_moves = ((-1, -1), (1, -1))
 
-        self._has_moved = False
-        self.start_rank = self.square % 10
         self.promotion_rank = 0 if self.color == "w" else 7
 
     def go_to(self, square):
 
         commands = super().go_to(square)
-
-        self._has_moved = square % 10 is not self.start_rank
 
         if self.rank is self.promotion_rank:
 
@@ -46,11 +42,18 @@ class Pawn(MainPiece):
 
         return commands
 
+    @staticmethod
+    def precise_transform(piece):
+
+        if piece.color == "b":
+            piece.moves = ((0, 1), (0, 2))
+        else:
+            piece.moves = ((0, -1), (0, -2))
+
     def redo(self, square):
 
         # skip the call to Pawn.go_to, avoiding the promotion dialog
         super().go_to(square)
-        self._has_moved = square % 10 is not self.start_rank
 
     def update_valid_moves(self):
 
@@ -74,7 +77,7 @@ class Pawn(MainPiece):
                     self.valid_moves += (d,)
                 else:
                     break  # not reaching the second step if a piece is on the front square
-            if self._has_moved:
+            if self.has_moved:
                 break
 
         for move in self.attacking_moves:

@@ -72,12 +72,17 @@ class Piece:
 
         self.widget = self.WIDGET_CLASS(self)
 
+    @staticmethod
+    def precise_transform(piece):
+        """ Called at each transformation """
+
     def transform(self, piece_class):
 
         for attr in piece_class.ATTR_TO_COPY:
             setattr(self, attr, getattr(piece_class, attr))
         for method in piece_class.METH_TO_COPY:
             setattr(self, method, bp.PrefilledFunction(getattr(piece_class, method), self))
+        piece_class.precise_transform(self)
 
         if self.widget is not None:
             image = self.board.display.application.images[self.color + self.LETTER]

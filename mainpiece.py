@@ -399,3 +399,30 @@ class MainPieceMovingTwice(MainPiece):
             self.bonus.update_ally_vm()
         if self.malus:
             self.malus.update_victim_vm()
+
+
+class HasMoved(MainPiece):
+    """ Class for main pieces who need to know if they have already moved """
+
+    def __init__(self, *args, **kwargs):
+
+        MainPiece.__init__(self, *args, **kwargs)
+
+        self._first_move = None
+
+    has_moved = property(lambda self: self._first_move is not None)
+
+    def go_to(self, square):
+
+        if self._first_move is None:
+            self._first_move = self.board.current_move
+
+        return super().go_to(square)
+
+    def undo(self, move):
+
+        super().undo(move)
+
+        if move == self._first_move:
+            self._first_move = None
+
