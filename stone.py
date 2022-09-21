@@ -125,10 +125,6 @@ class Stone(MainPiece):
                     extrapiece = self.board.get_extrapiece_at(square + d)
                     if extrapiece != 0:
                         continue
-                    if False and hasattr(self.board, "trap"):
-                        if True in (trap.is_availible and trap.square is square
-                                    for trap in self.board.trap[self.enemy_color]):
-                            continue
 
                     valid_move = d
                     x += dx

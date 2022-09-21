@@ -18,18 +18,14 @@ class ChessBoard(Board):
     def _create_pieces(self):
 
         # Creating pieces
-        self.king = {}
         for square in range(1, 72, 10):
             Pawn(self, "b", square)
         for square in range(6, 77, 10):
             Pawn(self, "w", square)
-        self.knight = {"b": (Knight(self, "b", 10), Knight(self, "b", 60)),
-                       "w": (Knight(self, "w", 17), Knight(self, "w", 67))}
-        self.bishop = {"b": (Bishop(self, "b", 20), Bishop(self, "b", 50)),
-                       "w": (Bishop(self, "w", 27), Bishop(self, "w", 57))}
-        self.rook = {"b": (Rook(self, "b", 0), Rook(self, "b", 70)),
-                     "w": (Rook(self, "w", 7), Rook(self, "w", 77))}
-        self.queen = {"b": (Queen(self, "b", 30),), "w": (Queen(self, "w", 37),)}
+        Knight(self, "b", 10), Knight(self, "b", 60), Knight(self, "w", 17), Knight(self, "w", 67)
+        Bishop(self, "b", 20), Bishop(self, "b", 50), Bishop(self, "w", 27), Bishop(self, "w", 57)
+        Rook(self, "b", 0), Rook(self, "b", 70), Rook(self, "w", 7), Rook(self, "w", 77)
+        Queen(self, "b", 30), Queen(self, "w", 37)
         self.king = {"b": King(self, "b", 40), "w": King(self, "w", 47)}
 
     def get_position(self):

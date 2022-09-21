@@ -62,7 +62,7 @@ class IratusApp(bp.Application):
 
     current_game = property(lambda self: self.focused_scene.current_game)
 
-    def new_game(self):  # TODO : a better game management -> close ?
+    def new_game(self):
 
         self.focused_scene.current_game = Game(self.focused_scene)
 

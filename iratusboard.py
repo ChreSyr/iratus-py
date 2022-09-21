@@ -1,6 +1,5 @@
 
 from board import Board, BoardDisplay, BoardPosition
-from dynamite import Dynamite
 from trap import Trap
 from pawn import TorpedoPawn
 from stone import Stone
@@ -27,21 +26,15 @@ class IratusBoard(Board):
         for square in range(7, 78, 10):
             TorpedoPawn(self, "w", square)
 
-        self.stone = {"b": (Stone(self, "b", 0), Stone(self, "b", 70)),
-                      "w": (Stone(self, "w", 9), Stone(self, "w", 79))}
-        self.trap = {"b": (Dynamite(self, "b", 30), Trap(self, "b", 40)),
-                     "w": (Dynamite(self, "w", 39), Trap(self, "w", 49))}
-        self.knight = {"b": (Knight(self, "b", 11), Knight(self, "b", 61)),
-                       "w": (Knight(self, "w", 18), Knight(self, "w", 68))}
-        self.bishop = {"b": (Bishop(self, "b", 21), Bishop(self, "b", 51)),
-                       "w": (Bishop(self, "w", 28), Bishop(self, "w", 58))}
-        self.dog = {"b": (Dog(self, "b", 10), Dog(self, "b", 60)),
-                    "w": (Dog(self, "w", 19), Dog(self, "w", 69))}
-        self.leash = {"b": (Leash(self, "b", 20, self.dog["b"][0]), Leash(self, "b", 50, self.dog["b"][1])),
-                      "w": (Leash(self, "w", 29, self.dog["w"][0]), Leash(self, "w", 59, self.dog["w"][1]))}
-        self.rook = {"b": (Rook(self, "b", 1), Rook(self, "b", 71)),
-                     "w": (Rook(self, "w", 8), Rook(self, "w", 78))}
-        self.queen = {"b": (Queen(self, "b", 31),), "w": (Queen(self, "w", 38),)}
+        Stone(self, "b", 0), Stone(self, "b", 70), Stone(self, "w", 9), Stone(self, "w", 79)
+        Trap(self, "b", 30), Trap(self, "b", 40), Trap(self, "w", 39), Trap(self, "w", 49)
+        Knight(self, "b", 11), Knight(self, "b", 61), Knight(self, "w", 18), Knight(self, "w", 68)
+        Bishop(self, "b", 21), Bishop(self, "b", 51), Bishop(self, "w", 28), Bishop(self, "w", 58)
+        dogs = (Dog(self, "b", 10), Dog(self, "b", 60), Dog(self, "w", 19), Dog(self, "w", 69))
+        Leash(self, "b", 20, dogs[0]), Leash(self, "b", 50, dogs[1])
+        Leash(self, "w", 29, dogs[2]), Leash(self, "w", 59, dogs[3])
+        Rook(self, "b", 1), Rook(self, "b", 71), Rook(self, "w", 8), Rook(self, "w", 78)
+        Queen(self, "b", 31), Queen(self, "w", 38)
         self.king = {"b": King(self, "b", 41), "w": King(self, "w", 48)}
 
     def get_position(self):
@@ -56,9 +49,8 @@ class IratusBoard(Board):
         self.display = BoardDisplay(self, scene, square_size=64)
         for piece in self.pieces:
             piece.init_display()
-        for set_trap in self.trap.values():
-            for trap in set_trap:
-                trap.init_display()
+        for ep in self.extrapieces:
+            ep.init_display()
 
         self.calculator = IratusBoardCalculator(self)
 
@@ -144,11 +136,6 @@ class IratusBoardCalculator(IratusBoard):
         self.ep_correspondence = {}
         for i, ep in enumerate(board.extrapieces):
             self.ep_correspondence[ep] = self.extrapieces[i]
-
-        # self.traps_correspondence = {}
-        # for color in "w", "b":
-        #     for i in 0, 1:
-        #         self.traps_correspondence[board.trap[color][i]] = self.trap[color][i]
 
     def clone(self):
 

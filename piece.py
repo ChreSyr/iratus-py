@@ -91,8 +91,6 @@ class Piece:
 
             self.board.calculator.pieces_correspondence[self].transform(piece_class)
 
-        # TODO : add the transformed piece in board.queen, board.bishops...
-
 
 class PieceWidget(bp.Widget):
 

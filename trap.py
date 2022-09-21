@@ -31,8 +31,6 @@ class Trap(Bonus):
     def init_display(self):
 
         super().init_display()
-        self.cage.init_display()
-        self.cage.widget.hide()
 
 
 class Cage(Malus):
@@ -49,6 +47,11 @@ class Cage(Malus):
 
         assert capturer.LETTER == "s"
         return ("anticapture", self.victim),
+
+    def init_display(self):
+
+        super().init_display()
+        self.widget.hide()
 
     def update_victim_vm(self):
         self.victim.valid_moves = ()

@@ -67,8 +67,8 @@ class Game:
                 remaining_pieces[piece.color].append(piece)
 
         def insufficient_materiel(set):
-            # TODO : sligthly more accurate draws
-            # For example, if the two players still have a kniht, checkmate is possible
+            # NOTE : We could do sligthly more accurate draws
+            # For example, if the two players still have a kniht, checkmate is possible but very unlikely
             if len(set) == 0:
                 return True
             if len(set) == 1:

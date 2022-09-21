@@ -142,10 +142,9 @@ class TorpedoPawn(Pawn):  # Pawns for iratus
                 if self.board[square] == 0:
 
                     # if there is an enemy trap on that square, we can't ride it
-                    if hasattr(self.board, "trap"):
-                        if True in (trap.is_availible and trap.square is square
-                                    for trap in self.board.trap[self.enemy_color]):
-                            continue
+                    ep = self.board.get_extrapiece_at(square)
+                    if ep != 0:
+                        continue
 
                     self.valid_moves += (d,)
                 else:

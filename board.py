@@ -115,44 +115,12 @@ class Board:
     def redo(self, move):
 
         self.current_move = move
-        piece = self[move.start_square]
-
-        """for capture in move.captures:
-            capture.capture(piece)
-
-        for before_move in move.before_moves:
-            self.redo(before_move)
-
-        piece.redo(move.end_square)
-        # piece.go_to(move.end_square)
-
-        for after_move in move.after_moves:
-            self.redo(after_move)"""
-
         move.redo_commands()
 
     def undo(self, move):
         """ Undo the last move """
 
         move.undo_commands()
-
-        """for after_move in move.after_moves:
-            self.undo(after_move)
-
-        # piece = self[move.end_square]
-        if move.piece.is_captured:
-            assert move.piece in move.captures
-            move.piece.uncapture()
-        move.piece.undo(move)
-
-        for before_move in move.before_moves:
-            self.undo(before_move)
-
-        for capture in move.captures:
-            if not capture.is_captured:
-                assert capture is move.piece
-                continue
-            capture.uncapture()"""
 
     def update_pieces_vm(self):
         """ Update the valid moves of all the remaining pieces """
@@ -267,13 +235,6 @@ class BoardDisplay(bp.Zone):
 
         if widget.is_asleep:
             return  # occurs when a piece is captured : the selection signal is emitted right after it falls asleep
-
-        # When the stone is rolled by an enemy
-        # if widget.piece.LETTER == "s":
-        #     if not widget.collidemouse():
-        #         self.selected_piece = widget
-        #         widget.defocus()
-        #         return
 
         self.selection_square.set_pos(topleft=widget.rect.topleft)
         self.selection_square.show()
