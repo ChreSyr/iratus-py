@@ -328,16 +328,14 @@ class Move:
         self.end_square = end_square
 
         self.piece = board[start_square]
-        self.commands = ()
+        self.commands = []
         self.trap_equipement = None
         self.trap_capture = None
         self.unequiped_trap = None
         self.destroyed_trap = None
         self.broken_cage = None
 
-        self.before_moves = []
-        self.after_moves = []
-        self.captures = []
+        self.captures = 0
         self.notation = None
         self.turn = self.piece.color
         self.next_turn = self.piece.enemy_color
@@ -388,33 +386,34 @@ class Move:
     def execute_command(self, command, *args):
 
         if command in ("after_move", "before_move"):
-            self.commands += (command, self.board.move(args[0], args[1])),
+            self.commands.append((command, self.board.move(args[0], args[1])))
         elif command == "anticapture":
-            self.captures.remove(args[0])
-            """elif command == "after_move":
-                self.after_moves.append(self.board.move(args[0], args[1]))
-                self.commands += ("move", args[0], args[1]),
-            elif command == "before_move":
-                self.before_moves.append(self.board.move(args[0], args[1]))
-                self.commands += ("move", args[0], args[1]),"""
+            cap_to_rem = None
+            for prev_command in self.commands:
+                if prev_command[0] == "capture" and prev_command[1] is args[0]:
+                    cap_to_rem = prev_command
+                    break
+            assert cap_to_rem is not None
+            self.commands.remove(cap_to_rem)
+            self.captures -= 1
         elif command == "capture":
-            self.commands += ("capture", *args),
+            self.commands.append(("capture", *args))
             captured = args[0]
             capturer = args[1]
-            self.captures.append(captured)
             self.execute_commands(captured.capture(capturer))
             self.counter50rule = 0
+            self.captures += 1
         elif command == "main_move":
-            self.commands += ("main_move",),
+            self.commands.append(("main_move",))
             self.execute_commands(self.piece.go_to(self.end_square))
             self.init_notation()
         elif command == "notation":
             self.notation = args[0]
         elif command == "set_bonus":
-            self.commands += (command, *args),
+            self.commands.append((command, *args))
             args[0].set_bonus(args[2])  # mainpiece = args[0], new_bonus = args[2]
         elif command == "set_malus":
-            self.commands += (command, *args),
+            self.commands.append((command, *args))
             args[0].set_malus(args[2])  # mainpiece = args[0], new_malus = args[2]
         elif command == "set_next_turn":
             self.next_turn = args[0]
@@ -422,7 +421,7 @@ class Move:
             piece = args[0]
             old_class = piece.__class__
             new_class = args[1]
-            self.commands += (command, piece, old_class, new_class),
+            self.commands.append((command, piece, old_class, new_class))
             piece.transform(new_class)
         else:
             raise ValueError(command)
@@ -477,7 +476,7 @@ class Move:
         # When two allied dogs could have jumped on this square
         # TODO
 
-        if len(self.captures) != 0:
+        if self.captures > 0:
 
             # When a pawn captures something, we write its origin file
             if piece.LETTER == "p":
@@ -492,7 +491,7 @@ class Move:
 
         for command, *args in self.commands:
             if command in ("after_move", "before_move"):
-                self.board.move(args[0], args[1])
+                self.board.redo(args[0])
             elif command == "capture":
                 args[0].capture(args[1])  # captured = args[0], capturer = args[1]
             elif command == "main_move":

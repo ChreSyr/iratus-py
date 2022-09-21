@@ -111,7 +111,10 @@ class Stone(MainPiece):
                 if piece_on_attainable_square == 0:
 
                     # if there is an enemy trap on that square, we can't ride it
-                    if hasattr(self.board, "trap"):
+                    extrapiece = self.board.get_extrapiece_at(square + d)
+                    if extrapiece != 0:
+                        continue
+                    if False and hasattr(self.board, "trap"):
                         if True in (trap.is_availible and trap.square is square
                                     for trap in self.board.trap[self.enemy_color]):
                             continue
@@ -121,6 +124,11 @@ class Stone(MainPiece):
                     y += dy
                     d += dx * 10 + dy
                     rolling = True
+
+                elif piece_on_attainable_square.LETTER == self.LETTER and \
+                        piece_on_attainable_square.color != self.color:
+                    valid_move = d
+                    rolling = False
 
                 elif piece_on_attainable_square.malus and piece_on_attainable_square.malus.LETTER == "c":  # in a cage
                     if piece_on_attainable_square.color == self.color:
