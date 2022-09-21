@@ -18,7 +18,7 @@ class Dog(MainPiece):
 
         commands = super().capture(capturer)
         if not self.leash.is_captured:
-            capture = "capture", self.leash
+            capture = "capture", self.leash, capturer
             if commands is None:
                 commands = capture,
             else:

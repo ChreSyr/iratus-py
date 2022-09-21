@@ -101,6 +101,9 @@ class MainPiece(Piece):
     def can_be_captured_by(self, piece, move):
         """ Only called by piece.can_go_to() """
 
+        if self.malus is not None:
+            assert self.malus.LETTER == "c"
+            return False
         return True
 
     def can_equip(self, extrapiece):
