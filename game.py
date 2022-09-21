@@ -45,8 +45,6 @@ class Game:
         elif self.board.king[self.turn].in_check:
             self.history[-1].notation += "+"
 
-        # TODO : cage, compact edog notation
-
         if game_state in ("checkmate", "stalemate",
                           "draw by repetition", "draw by insufficient material", "draw by 50-moves rule"):
             description = ""

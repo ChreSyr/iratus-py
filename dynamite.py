@@ -19,7 +19,8 @@ class Dynamite(Bonus):
                 self.widget.sleep()
 
             capture = "capture", mainpiece, self
-            return capture,
+            notation_hint = "notation_hint", "*"
+            return capture, notation_hint
 
     def update_ally_vm(self):
 

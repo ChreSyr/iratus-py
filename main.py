@@ -50,8 +50,8 @@ class IratusApp(bp.Application):
             for c in ("w", "b"):
                 self.images[c+p] = load("Images/"+c+p+".png")
 
-        self.chess_scene = GameScene(self, board_class=ChessBoard, name="ChessScene")
         self.iratus_scene = GameScene(self, board_class=IratusBoard, name="IratusScene")
+        self.chess_scene = GameScene(self, board_class=ChessBoard, name="ChessScene")
         iratus_promotion_choices = BoardDisplay.STYLE["promotion_choices"].copy()
         iratus_promotion_choices["Enraged Dog"] = EnragedDog
         self.iratus_scene.set_style_for(BoardDisplay, background_image=bp.image.load("Images/iratusboard.png"),

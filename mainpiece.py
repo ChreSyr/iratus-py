@@ -81,7 +81,6 @@ class MainPiece(Piece):
 
     WIDGET_CLASS = MainPieceWidget
 
-    # TODO : move to classes overriding it
     ATTR_TO_COPY = Piece.ATTR_TO_COPY + ("moves",)
     METH_TO_COPY = Piece.METH_TO_COPY + ("capture", "redo", "uncapture", "undo", "update_valid_moves")
 
@@ -133,7 +132,7 @@ class MainPiece(Piece):
 
         # Memorizing the new position for the game
         assert self.board[self.square] is self
-        self.board[self.square] = 0  # TODO
+        self.board[self.square] = 0
 
         self.is_captured = True
         self.valid_moves = self.antiking_squares = ()
@@ -174,8 +173,8 @@ class MainPiece(Piece):
 
         # Memorizing the new position for the game
         # assert self.board[self.square] is self
-        self.board[self.square] = 0  # TODO
-        self.board[square] = self  # self.square = square  # TODO
+        self.board[self.square] = 0
+        self.board[square] = self
 
         # Memorizing the new position for the display
         if self.widget is not None:
@@ -227,7 +226,7 @@ class MainPiece(Piece):
 
         # Memorizing the new position for the game
         assert self.board[self.square] == 0
-        self.board[self.square] = self  # TODO
+        self.board[self.square] = self
 
         self.is_captured = False
 

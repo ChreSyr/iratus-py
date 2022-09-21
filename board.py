@@ -72,7 +72,6 @@ class Board:
     def add_piece(self, piece):
 
         if isinstance(piece, MainPiece):
-            # self[piece.square] = piece  # TODO
             self._squares[piece.square] = piece  # only time we directly use self._squares
             self.pieces += piece,
             self.set[piece.color] += piece,
@@ -328,6 +327,7 @@ class Move:
 
         self.captures = 0
         self.notation = None
+        self.notation_hints = []
         self.turn = self.piece.color
         self.next_turn = self.piece.enemy_color
         self.turn_number = 1
@@ -414,12 +414,19 @@ class Move:
             self.init_notation()
         elif command == "notation":
             self.notation = args[0]
+        elif command == "notation_hint":
+            assert self.notation is None
+            self.notation_hints.append(args[0])
         elif command == "set_bonus":
             self.commands.append((command, *args))
             args[0].set_bonus(args[2])  # mainpiece = args[0], new_bonus = args[2]
+            if args[2] is not None:
+                self.notation_hints.append("&" + args[2].LETTER)
         elif command == "set_malus":
             self.commands.append((command, *args))
             self.execute_commands(args[0].set_malus(args[2]))  # mainpiece = args[0], new_malus = args[2]
+            if args[2] is not None:
+                self.notation_hints.append("&" + args[2].LETTER)
         elif command == "set_next_turn":
             self.next_turn = args[0]
         elif command == "transform":
@@ -444,7 +451,7 @@ class Move:
         if piece.LETTER != "p":
             n += piece.LETTER.capitalize()
 
-        # When two allied knights, rooks or queens could have jump on this square
+        # When two allied knights, rooks or queens could have jumped on this square
         for thing in (("n", self.board.knight), ("r", self.board.rook), ("q", self.board.queen)):
             if piece.LETTER == thing[0]:
                 allies = []  # allies of same type who also could have make the move
@@ -489,6 +496,14 @@ class Move:
             n += "x"
 
         n += piece.coordinates
+
+        # for command, *args in self.commands:
+        #     if command in ("set_bonus", "set_malus"):
+        #         if args[2] is not None:
+        #             n += "&" + args[2].LETTER
+
+        for hint in self.notation_hints:
+            n += hint
 
         self.notation = n
 
