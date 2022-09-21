@@ -132,3 +132,5 @@ class Stone(MainPiece):
 
         if self.bonus:
             self.bonus.update_ally_vm()
+        if self.malus:
+            self.malus.update_victim_vm()

@@ -104,6 +104,9 @@ class King(MainPiece):
                 self.valid_moves += (-20,)
             self.castle_rights[0] = can_long_castle
 
+        if self.malus:
+            self.malus.update_victim_vm()
+
     def undo(self, move):
 
         super().undo(move)

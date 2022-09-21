@@ -60,11 +60,14 @@ class Dog(MainPiece):
 
         if self.bonus:
             self.bonus.update_ally_vm()
+        if self.malus:
+            self.malus.update_victim_vm()
 
 
 class EnragedDog(MainPieceMovingTwice):
 
     # TODO : when an enraged dog gets trapped on first move ?
+    # TODO : solve : when an enraged dog gets captured on the first move, the allies can move
 
     LETTER = "ed"
     moves = ((1, 0), (0, 1), (-1, 0), (0, -1))

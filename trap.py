@@ -11,17 +11,33 @@ class Trap(Bonus):
 
         Bonus.__init__(self, board, color, square)
 
-        self.state = 0  # 0 : trap , 1 : cage , 2 : destroyed
         self.cage = Cage(self)
         # self.cage.is_captured = True
 
     def handle_allycapture(self, capturer):
 
+        return
+
         super().handle_allycapture(capturer)
 
         if capturer:  # False when the capturer got dynamited
-            lock_up = "set_malus", capturer, self.cage
+            lock_up = "set_malus", capturer, capturer.malus, self.cage
             return lock_up,
+
+    def handle_collision(self, mainpiece):
+
+        if mainpiece.color == self.color:
+            assert mainpiece.bonus is None
+            set_bonus = "set_bonus", mainpiece, None, self
+            return set_bonus,
+        else:
+            self.is_captured = True
+            if self.widget is not None:
+                self.widget.sleep()
+
+            assert mainpiece.malus is None
+            set_malus = "set_malus", mainpiece, None, self.cage
+            return set_malus,
 
     def init_display(self):
 
@@ -38,6 +54,7 @@ class Cage(Malus):
 
         Malus.__init__(self, trap.board, trap.color, trap.square)
         self.trap = trap
+        self.is_captured = True
 
     def set_victim(self, piece):
 
@@ -52,3 +69,7 @@ class Cage(Malus):
                 self.widget.hide()
             else:
                 self.widget.show()
+
+    def update_victim_vm(self):
+        self.victim.valid_moves = ()
+        self.victim.antiking_squares = ()

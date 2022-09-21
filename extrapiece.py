@@ -11,25 +11,38 @@ class ExtraPiece(Piece):
 
     WIDGET_CLASS = ExtraPieceWidget
 
+    def __init__(self, board, color, square):
+
+        Piece.__init__(self, board, color, square)
+
+        self._mainpiece = None
+
+    # 0 mean empty, 1 mean attached to a mainpieceused
+    # For board position (3 times repeat)
+    state = property(lambda self: 1 if self._mainpiece else 0)
+
     def can_equip(self, mainpiece):
         """ Return True if the mainpiece can be attached to this extrapiece """
+
+    def copy(self, original):
+
+        self.is_captured = original.is_captured
+        if self.is_captured:
+            return
+
+        if self.square != original.square:
+            self.go_to(original.square)
 
 
 class Bonus(ExtraPiece):
 
-    def __init__(self, board, color, square):
-
-        ExtraPiece.__init__(self, board, color, square)
-
-        self._ally = None
-
-    ally = property(lambda self: self._ally)
-    is_availible = property(lambda self: self._ally is None)
+    ally = property(lambda self: self._mainpiece)
+    is_availible = property(lambda self: self._mainpiece is None)
 
     def _handle_ally_widget_motion(self):
 
         if self.widget.is_awake:
-            self.widget.set_pos(topleft=self._ally.widget.rect.topleft)
+            self.widget.set_pos(topleft=self.ally.widget.rect.topleft)
             self.widget.motion_end = self.widget.motion_pos = self.widget.rect.topleft
 
     def can_equip(self, mainpiece):
@@ -41,6 +54,8 @@ class Bonus(ExtraPiece):
         return self.color == mainpiece.color
 
     def handle_allycapture(self, capturer):
+
+        return
 
         self.is_captured = True
 
@@ -54,11 +69,14 @@ class Bonus(ExtraPiece):
         if self.widget is not None:
             self.widget.wake()
 
+    def handle_collision(self, mainpiece):
+        """ Handle when a piece walks on this extrapiece """
+
     def set_ally(self, piece):
 
-        if self._ally is not None and self._ally.widget is not None:
-            self._ally.widget.signal.MOTION.disconnect(self._handle_ally_widget_motion)
-        self._ally = piece
+        if self.ally is not None and self.ally.widget is not None:
+            self.ally.widget.signal.MOTION.disconnect(self._handle_ally_widget_motion)
+        self._mainpiece = piece
         if piece is not None and piece.widget is not None:
             piece.widget.signal.MOTION.connect(self._handle_ally_widget_motion, owner=self.widget)
 
@@ -75,18 +93,12 @@ class Malus(ExtraPiece):
 
     WIDGET_CLASS = MalusWidget
 
-    def __init__(self, board, color, square):
-
-        ExtraPiece.__init__(self, board, color, square)
-
-        self._victim = None
-
-    victim = property(lambda self: self._victim)
+    victim = property(lambda self: self._mainpiece)
 
     def _handle_victim_widget_motion(self):
 
         if self.widget.is_awake:
-            self.widget.set_pos(topleft=self._victim.widget.rect.topleft)
+            self.widget.set_pos(topleft=self._mainpiece.widget.rect.topleft)
             self.widget.motion_end = self.widget.motion_pos = self.widget.rect.topleft
 
     def can_equip(self, mainpiece):
@@ -95,8 +107,11 @@ class Malus(ExtraPiece):
 
     def set_victim(self, piece):
 
-        if self._victim is not None and self._victim.widget is not None:
-            self._victim.widget.signal.MOTION.disconnect(self._handle_victim_widget_motion)
-        self._victim = piece
+        if self.victim is not None and self.victim.widget is not None:
+            self.victim.widget.signal.MOTION.disconnect(self._handle_victim_widget_motion)
+        self._mainpiece = piece
         if piece is not None and piece.widget is not None:
             piece.widget.signal.MOTION.connect(self._handle_victim_widget_motion, owner=self.widget)
+
+    def update_victim_vm(self):
+        """ Upadte self.victim.valid_moves or antiking_squares """

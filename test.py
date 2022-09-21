@@ -1,5 +1,4 @@
 
+lis = [0, 1, 2]
 
-d = {"a": 2}
-d += {"b": 4}
-print(d)
+print(lis.reverse())

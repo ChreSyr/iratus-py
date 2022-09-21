@@ -117,11 +117,11 @@ class IratusBoardPosition(BoardPosition):
     def __init__(self, board, turn):
 
         BoardPosition.__init__(self, board, turn)
-        self.traps = {
-            "w": tuple((wtrap.square, wtrap.is_availible) for wtrap in board.trap["w"]),
-            "b": tuple((btrap.square, btrap.is_availible) for btrap in board.trap["b"])
+        self.extrapieces = {
+            "w": tuple((wep.square, wep.state) for wep in board.extrapieces_set["w"]),
+            "b": tuple((bep.square, bep.state) for bep in board.extrapieces_set["b"])
         }
-        self._eq_attributes += ("traps",)
+        self._EQ_ATTRIBUTES += ("extrapieces",)
 
 
 class IratusBoardCalculator(IratusBoard):
@@ -136,20 +136,29 @@ class IratusBoardCalculator(IratusBoard):
         for i, piece in enumerate(board.pieces):
             self.pieces_correspondence[piece] = self.pieces[i]
 
-        self.traps_correspondence = {}
-        for color in "w", "b":
-            for i in 0, 1:
-                self.traps_correspondence[board.trap[color][i]] = self.trap[color][i]
+        self.ep_correspondence = {}
+        for i, ep in enumerate(board.extrapieces):
+            self.ep_correspondence[ep] = self.extrapieces[i]
+
+        # self.traps_correspondence = {}
+        # for color in "w", "b":
+        #     for i in 0, 1:
+        #         self.traps_correspondence[board.trap[color][i]] = self.trap[color][i]
 
     def clone(self):
 
         self._squares = [0] * 80
         for piece, clone_piece in self.pieces_correspondence.items():
             clone_piece.copy(piece)
+        for ep, clone_ep in self.ep_correspondence.items():
+            clone_ep.copy(ep)
 
-        for trap, clone_trap in self.traps_correspondence.items():
-            clone_trap.square = trap.square  # TODO : copy
+        # for trap, clone_trap in self.traps_correspondence.items():
+        #     clone_trap.square = trap.square  # TODO : copy
 
     def get_simulated_piece(self, piece):
 
-        return self.pieces_correspondence[piece]
+        try:
+            return self.pieces_correspondence[piece]
+        except KeyError:
+            return self.ep_correspondence[piece]

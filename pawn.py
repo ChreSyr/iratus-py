@@ -103,6 +103,8 @@ class Pawn(MainPiece):
 
         if self.bonus:
             self.bonus.update_ally_vm()
+        if self.malus:
+            self.malus.update_victim_vm()
 
 
 class TorpedoPawn(Pawn):  # Pawns for iratus
@@ -170,3 +172,5 @@ class TorpedoPawn(Pawn):  # Pawns for iratus
 
         if self.bonus:
             self.bonus.update_ally_vm()
+        if self.malus:
+            self.malus.update_victim_vm()

@@ -1,6 +1,6 @@
 
 
-from mainpiece import MainPiece
+from mainpiece import MainPiece, MainPieceMovingTwice
 from dog import EnragedDog
 
 
@@ -11,7 +11,7 @@ class Leash(MainPiece):
 
     def __init__(self, board, color, square, dog):
 
-        MainPiece.__init__(self, board, color, square)
+        MainPieceMovingTwice.__init__(self, board, color, square)
 
         assert dog.leash is None
 
@@ -36,6 +36,6 @@ class Leash(MainPiece):
 
         if (abs(self.square % 10 - self.dog.square % 10) > 1) or (abs(self.square // 10 - self.dog.square // 10) > 1):
             dog_pull = "after_move", self.dog.square, start_square
-            return commands + (dog_pull,)
+            return (dog_pull,) + commands
 
         return commands

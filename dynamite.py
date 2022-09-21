@@ -9,10 +9,26 @@ class Dynamite(Bonus):
 
     def handle_allycapture(self, capturer):
 
+        return
+
         super().handle_allycapture(capturer)
 
         if capturer:  # False when a piece with dynamite is captured by a piece with dynamite
             capture = "capture", capturer
+            return capture,
+
+    def handle_collision(self, mainpiece):
+
+        if mainpiece.color == self.color:
+            assert mainpiece.bonus is None
+            set_bonus = "set_bonus", mainpiece, None, self
+            return set_bonus,
+        else:
+            self.is_captured = True
+            if self.widget is not None:
+                self.widget.sleep()
+
+            capture = "capture", mainpiece, self
             return capture,
 
     def update_ally_vm(self):

@@ -85,6 +85,13 @@ class Board:
         else:
             raise ValueError
 
+    def get_extrapiece_at(self, square):
+
+        for extrapiece in self.extrapieces:
+            if not extrapiece.is_captured and extrapiece.state == 0 and extrapiece.square == square:
+                return extrapiece
+        return 0
+
     def get_position(self):
         """ Return a GamePosition object for the fat_history """
         raise NotImplemented
@@ -103,8 +110,7 @@ class Board:
         move = Move(self, start_square, end_square)
         self.current_move = move
 
-        move.execute_commands(move.piece.go_to(move.end_square))
-        move.init_notation()
+        move.execute_command("main_move")
 
         return move
 
@@ -113,7 +119,7 @@ class Board:
         self.current_move = move
         piece = self[move.start_square]
 
-        for capture in move.captures:
+        """for capture in move.captures:
             capture.capture(piece)
 
         for before_move in move.before_moves:
@@ -123,14 +129,7 @@ class Board:
         # piece.go_to(move.end_square)
 
         for after_move in move.after_moves:
-            self.redo(after_move)
-
-        for transformation in move.transformations:
-            # square = transformation[0]
-            # piece = self[square]
-            # new_class = transformation[2]
-            # piece.transform(new_class)
-            self[transformation[0]].transform(transformation[2])
+            self.redo(after_move)"""
 
         move.redo_commands()
 
@@ -139,14 +138,7 @@ class Board:
 
         move.undo_commands()
 
-        for transformation in move.transformations:
-            # square = transformation[0]
-            # piece = self[square]
-            # old_class = transformation[1]
-            # piece.transform(old_class)
-            self[transformation[0]].transform(transformation[1])
-
-        for after_move in move.after_moves:
+        """for after_move in move.after_moves:
             self.undo(after_move)
 
         # piece = self[move.end_square]
@@ -162,7 +154,7 @@ class Board:
             if not capture.is_captured:
                 assert capture is move.piece
                 continue
-            capture.uncapture()
+            capture.uncapture()"""
 
     def update_pieces_vm(self):
         """ Update the valid moves of all the remaining pieces """
@@ -171,6 +163,7 @@ class Board:
 
 class BoardPosition:
     """ Store a chess position in a final object """
+    _EQ_ATTRIBUTES = ("squares", "castle_rights", "turn")
 
     def __init__(self, board, turn):
 
@@ -182,13 +175,12 @@ class BoardPosition:
         self.castle_rights = {"w": board.king["w"].castle_rights.copy(),
                               "b": board.king["b"].castle_rights.copy()}
         self.turn = turn
-        self._eq_attributes = ("squares", "castle_rights", "turn")
 
     def __eq__(self, other):
 
-        # TODO : according to FIDE rules, I should check if en passant abilities are the same
+        # NOTE : according to FIDE rules, I should check if en passant abilities are the same
 
-        for attr in self._eq_attributes:
+        for attr in self._EQ_ATTRIBUTES:
             if getattr(self, attr) != getattr(other, attr):
                 return False
         return True
@@ -346,10 +338,9 @@ class Move:
         self.before_moves = []
         self.after_moves = []
         self.captures = []
-        self.transformations = []
         self.notation = None
-        self.turn = board[start_square].color
-        self.next_turn = board[start_square].enemy_color
+        self.turn = self.piece.color
+        self.next_turn = self.piece.enemy_color
         self.turn_number = 1
         self.counter50rule = 0
 
@@ -360,10 +351,9 @@ class Move:
                 self.turn_number += .5
                 self.counter50rule = last_move.counter50rule + .5
 
-        capture = board[end_square]
-        if capture != 0:
-            self.captures.append(capture)
-            self.execute_commands(capture.capture(board[start_square]))
+        captured = board[end_square]
+        if captured != 0:
+            self.execute_command("capture", captured, self.piece)
 
         # Draw by 50-moves rule
         if self.piece.LETTER == "p":  # 0 when the capturer experienced a backfire
@@ -379,10 +369,11 @@ class Move:
             "anticapture", MainPiece
             "after_move", int, int
             "before_move", int, int
-            "capture", MainPiece
+            "capture", MainPiece:captured, MainPiece:capturer
+            "main_move"
             "notation", str
-            "set_bonus", MainPiece, Bonus
-            "set_malus", MainPiece, Malus
+            "set_bonus", MainPiece, OldBonus, NewBonus
+            "set_malus", MainPiece, OldMalus, NewMalus
             "set_next_turn", str
             "transform", MainPiece, class
 
@@ -392,36 +383,49 @@ class Move:
             return
 
         for command, *args in commands:
-            if command == "anticapture":
-                self.captures.remove(args[0])
-            elif command == "after_move":
+            self.execute_command(command, *args)
+
+    def execute_command(self, command, *args):
+
+        if command in ("after_move", "before_move"):
+            self.commands += (command, self.board.move(args[0], args[1])),
+        elif command == "anticapture":
+            self.captures.remove(args[0])
+            """elif command == "after_move":
                 self.after_moves.append(self.board.move(args[0], args[1]))
+                self.commands += ("move", args[0], args[1]),
             elif command == "before_move":
                 self.before_moves.append(self.board.move(args[0], args[1]))
-            elif command == "capture":
-                self.captures.append(args[0])
-                self.execute_commands(args[0].capture(None))
-                self.counter50rule = 0
-            elif command == "notation":
-                self.notation = args[0]
-            elif command == "set_bonus":
-                args[0].set_bonus(args[1])
-                self.commands += (command, *args),
-            elif command == "set_malus":
-                args[0].set_malus(args[1])
-                self.commands += (command, *args),
-            elif command == "set_next_turn":
-                self.next_turn = args[0]
-            elif command == "transform":
-                piece = args[0]
-                square = piece.square
-                old_class = piece.__class__
-                new_class = args[1]
-                transformation = square, old_class, new_class
-                self.transformations.append(transformation)
-                piece.transform(new_class)
-            else:
-                raise ValueError(command)
+                self.commands += ("move", args[0], args[1]),"""
+        elif command == "capture":
+            self.commands += ("capture", *args),
+            captured = args[0]
+            capturer = args[1]
+            self.captures.append(captured)
+            self.execute_commands(captured.capture(capturer))
+            self.counter50rule = 0
+        elif command == "main_move":
+            self.commands += ("main_move",),
+            self.execute_commands(self.piece.go_to(self.end_square))
+            self.init_notation()
+        elif command == "notation":
+            self.notation = args[0]
+        elif command == "set_bonus":
+            self.commands += (command, *args),
+            args[0].set_bonus(args[2])  # mainpiece = args[0], new_bonus = args[2]
+        elif command == "set_malus":
+            self.commands += (command, *args),
+            args[0].set_malus(args[2])  # mainpiece = args[0], new_malus = args[2]
+        elif command == "set_next_turn":
+            self.next_turn = args[0]
+        elif command == "transform":
+            piece = args[0]
+            old_class = piece.__class__
+            new_class = args[1]
+            self.commands += (command, piece, old_class, new_class),
+            piece.transform(new_class)
+        else:
+            raise ValueError(command)
 
     def init_notation(self):
         """ Called after the move is applied """
@@ -487,20 +491,45 @@ class Move:
     def redo_commands(self):
 
         for command, *args in self.commands:
-            if command == "set_bonus":
-                args[0].set_bonus(args[1])
+            if command in ("after_move", "before_move"):
+                self.board.move(args[0], args[1])
+            elif command == "capture":
+                args[0].capture(args[1])  # captured = args[0], capturer = args[1]
+            elif command == "main_move":
+                self.piece.redo(self.end_square)
+            elif command == "set_bonus":
+                args[0].set_bonus(args[2])  # mainpiece = args[0], new_bonus = args[2]
             elif command == "set_malus":
-                args[0].set_malus(args[1])
+                args[0].set_malus(args[2])  # mainpiece = args[0], new_malus = args[2]
+            elif command == "transform":
+                args[0].transform(args[2])  # piece = args[0], new_class = args[2]
             else:
                 raise ValueError(command)
 
     def undo_commands(self):
 
-        for command, *args in self.commands:
-            if command == "set_bonus":
-                args[0].set_bonus(None)
+        for command, *args in reversed(self.commands):
+            if command in ("after_move", "before_move"):
+                self.board.undo(args[0])
+            elif command == "capture":
+                captured = args[0]
+                # if not captured.is_captured:
+                #     assert captured is self.piece
+                #     continue  # TODO : works even when removed ?
+                captured.uncapture()
+            elif command == "main_move":
+                # piece = self[move.end_square]
+                # if self.piece.is_captured:
+                #     assert self.piece in self.captures
+                #     move.piece.uncapture()
+                self.piece.undo(self)
+            elif command == "set_bonus":
+                args[0].set_bonus(args[1])  # mainpiece = args[0], old_bonus = args[1]
             elif command == "set_malus":
-                args[0].set_malus(None)
+                args[0].set_malus(args[1])  # mainpiece = args[0], old_malus = args[1]
+            elif command == "transform":
+                args[0].transform(args[1])  # piece = args[0], old_class = args[1]
+                # TODO : fix : sometimes, self[transformation[0]] return 0 (dynamite ?)
             else:
                 raise ValueError(command)
 

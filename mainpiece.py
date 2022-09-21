@@ -103,18 +103,21 @@ class MainPiece(Piece):
 
         return True
 
-    def can_equip(self, bonus):
+    def can_equip(self, extrapiece):
 
-        return True
+        if extrapiece.color == self.color:
+            return self.bonus is None
+        else:
+            raise NotImplemented
 
     def can_go_to(self, square, move):
 
         piece = self.board[square]
 
         if piece == 0:
-            for extrapiece in self.board.extrapieces:
-                if extrapiece.is_captured is False and extrapiece.square == square:
-                    return self.can_equip(extrapiece) and extrapiece.can_equip(self)
+            extrapiece = self.board.get_extrapiece_at(square)
+            if extrapiece != 0:
+                return self.can_equip(extrapiece) and extrapiece.can_equip(self)
             return True
 
         if piece.color == self.color:
@@ -136,7 +139,22 @@ class MainPiece(Piece):
             self.widget.sleep()
 
         if self.bonus is not None:
-            return self.bonus.handle_allycapture(capturer)
+            return ("set_bonus", self, self.bonus, None),
+            # return self.bonus.handle_allycapture(capturer)
+
+    def copy(self, original):
+
+        super().copy(original)
+        if (self.bonus is None) != (original.bonus is None):
+            if original.bonus:
+                self.set_bonus(self.board.get_simulated_piece(original.bonus))
+            else:
+                self.set_bonus(None)
+        if (self.malus is None) != (original.malus is None):
+            if original.malus:
+                self.set_malus(self.board.get_simulated_piece(original.malus))
+            else:
+                self.set_malus(None)
 
     def go_to(self, square):
         """
@@ -160,13 +178,18 @@ class MainPiece(Piece):
         if self.bonus is not None:
             self.bonus.square = square
 
-        elif capture == 0:
-            for extrapiece in self.board.extrapieces:
-                if extrapiece.square == square:
-                    if self.can_equip(extrapiece) and extrapiece.can_equip(self):
-                        set_bonus = "set_bonus", self, extrapiece
-                        return set_bonus,
-                    break
+        extrapiece = self.board.get_extrapiece_at(square)
+        if extrapiece != 0:
+            return extrapiece.handle_collision(self)
+            assert self.can_equip(extrapiece) and extrapiece.can_equip(self)
+            if extrapiece.color == self.color:
+                assert self.bonus is None
+                set_bonus = "set_bonus", self, None, extrapiece
+                return set_bonus,
+            else:
+                assert self.malus is None
+                set_malus = "set_malus", self, None, extrapiece
+                return set_malus,
 
         return ()
 
@@ -181,7 +204,7 @@ class MainPiece(Piece):
 
         if bonus is not None:
             assert bonus.color == self.color
-            assert bonus._ally is None
+            assert bonus.ally is None
             bonus.set_ally(self)
 
         if self.bonus is None:
@@ -258,6 +281,8 @@ class MainPiece(Piece):
 
         if self.bonus:
             self.bonus.update_ally_vm()
+        if self.malus:
+            self.malus.update_victim_vm()
 
 
 class RollingMainPiece(MainPiece):
@@ -305,6 +330,8 @@ class RollingMainPiece(MainPiece):
 
         if self.bonus:
             self.bonus.update_ally_vm()
+        if self.malus:
+            self.malus.update_victim_vm()
 
 
 class MainPieceMovingTwice(MainPiece):
@@ -373,3 +400,5 @@ class MainPieceMovingTwice(MainPiece):
 
         if self.bonus:
             self.bonus.update_ally_vm()
+        if self.malus:
+            self.malus.update_victim_vm()
