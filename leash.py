@@ -21,12 +21,17 @@ class Leash(MainPiece):
     def capture(self, capturer):
 
         commands = super().capture(capturer)
+
+        if self.malus is not None and self.malus.LETTER == "c":  # release, don't enrage the dog
+            return commands
+
         if not self.dog.is_captured:
             dog_enrage = "transform", self.dog, EnragedDog
             if commands is None:
                 commands = dog_enrage,
             else:
                 commands = commands + (dog_enrage,)
+
         return commands
 
     def go_to(self, square):
