@@ -449,44 +449,47 @@ class Move:
 
         # the name of the piece, not for pawns
         if piece.LETTER != "p":
-            n += piece.LETTER.capitalize()
+            n += piece.LETTER.upper()
 
-        # When two allied knights, rooks or queens could have jumped on this square
-        for thing in (("n", self.board.knight), ("r", self.board.rook), ("q", self.board.queen)):
-            if piece.LETTER == thing[0]:
-                allies = []  # allies of same type who also could have make the move
-                for piece2 in thing[1][piece.color]:
-                    if piece2 is not piece:
-                        for move in piece2.valid_moves:
-                            if self.end_square is piece2.square + move:
-                                allies.append(piece2)
-                if len(allies) == 1:
-                    if self.start_square // 10 is allies[0].square // 10:
-                        # They are on the same file, so we indiquate the rank
-                        n += str(10 - self.start_square % 10)
-                    else:
-                        # They are not on the same file
-                        n += file_dict[self.start_square // 10]
-                elif len(allies) > 1:
-                    same_file = same_rank = False
-                    for ally in allies:
-                        if ally.file is self.start_square // 10:
-                            same_file = True
-                        if ally.rank is self.start_square % 10:
-                            same_rank = True
-                    if same_file is False:
-                        # They are not on the same file
-                        n += file_dict[self.start_square // 10]
-                    elif same_rank is False:
-                        # They are on the same file, but not on the same rank
-                        n += str(10 - self.start_square % 10)
-                    else:
-                        # There is at least one on the same rank and one on the same file
-                        # NOTE : handles when 3 queens can go on the same square
-                        n += file_dict[self.start_square // 10] + str(10 - self.start_square % 10)
+        # When two allied pieces could have jumped on this square
+        if piece.LETTER in ("n", "r", "q", "d", "ed"):
+            identical_allies = []
+            for ally in self.board.set[piece.color]:
+                if ally.LETTER == piece.LETTER and ally != piece:
+                    identical_allies.append(ally)
+            if len(identical_allies):
 
-        # When two allied dogs could have jumped on this square
-        # TODO
+                annoying_allies = []
+                for ally in identical_allies:
+                    for move in ally.valid_moves:
+                        if self.end_square is ally.square + move:
+                            annoying_allies.append(ally)
+
+                if len(annoying_allies):
+                    if len(annoying_allies) == 1:
+                        if self.start_square // 10 is annoying_allies[0].square // 10:
+                            # They are on the same file, so we indiquate the rank
+                            n += str(10 - self.start_square % 10)
+                        else:
+                            # They are not on the same file
+                            n += file_dict[self.start_square // 10]
+                    elif len(annoying_allies) > 1:
+                        same_file = same_rank = False
+                        for ally in annoying_allies:
+                            if ally.file is self.start_square // 10:
+                                same_file = True
+                            if ally.rank is self.start_square % 10:
+                                same_rank = True
+                        if same_file is False:
+                            # They are not on the same file
+                            n += file_dict[self.start_square // 10]
+                        elif same_rank is False:
+                            # They are on the same file, but not on the same rank
+                            n += str(10 - self.start_square % 10)
+                        else:
+                            # There is at least one on the same rank and one on the same file
+                            # NOTE : handles when 3 queens can go on the same square
+                            n += file_dict[self.start_square // 10] + str(10 - self.start_square % 10)
 
         if self.captures > 0:
 
