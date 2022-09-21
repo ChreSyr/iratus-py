@@ -111,7 +111,7 @@ class MainPiece(Piece):
         if extrapiece.color == self.color:
             return self.bonus is None
         else:
-            raise NotImplemented
+            return False
 
     def can_go_to(self, square, move):
 
