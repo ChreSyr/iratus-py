@@ -118,14 +118,14 @@ class Malus(ExtraPiece):
 
         self.is_captured = self.victim is None
 
+        if piece is not None:
+            self.go_to(piece.square)
+
         if self.widget:
             if self.is_captured:
                 self.widget.hide()
             else:
                 self.widget.show()
-
-        if piece is not None:
-            self.go_to(piece.square)
 
     def update_victim_vm(self):
         """ Upadte self.victim.valid_moves or antiking_squares """
