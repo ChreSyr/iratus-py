@@ -70,7 +70,9 @@ class Stone(MainPiece):
     def capture(self, capturer):
 
         start_square = capturer.square
-        assert start_square != self.square
+
+        if start_square == self.square:  # cage release
+            return super().capture(capturer)
 
         roll = self._roll(self.square // 10 - start_square // 10, self.square % 10 - start_square % 10)
         if roll:  # The stone has not been ejected
@@ -80,6 +82,18 @@ class Stone(MainPiece):
 
         else:
             return super().capture(capturer)
+
+    def go_to(self, square):
+
+        prisoner = self.board[square]
+        if prisoner == 0:
+            return super().go_to(square)
+        else:
+            assert prisoner.malus.LETTER == "c"
+            cancel_mainmove = "cancel_mainmove",
+            autodestruction = "capture", self, self
+            release = "set_malus", prisoner, prisoner.malus, None
+            return cancel_mainmove, autodestruction, release
 
     def update_valid_moves(self):
 

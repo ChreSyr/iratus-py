@@ -141,9 +141,13 @@ class MainPiece(Piece):
         if self.widget is not None:
             self.widget.sleep()
 
+        if self.malus is not None:
+            if self.malus.LETTER != "c":
+                raise NotImplemented("if such a malus exists, we should merge malus and bonus reactions")
+            return self.malus.handle_victimcapture(capturer)
+
         if self.bonus is not None:
-            return ("set_bonus", self, self.bonus, None),
-            # return self.bonus.handle_allycapture(capturer)
+            return self.bonus.handle_allycapture(capturer)
 
     def copy(self, original):
 
@@ -171,7 +175,6 @@ class MainPiece(Piece):
         # Memorizing the new position for the game
         # assert self.board[self.square] is self
         self.board[self.square] = 0  # TODO
-        capture = self.board[square]
         self.board[square] = self  # self.square = square  # TODO
 
         # Memorizing the new position for the display
@@ -184,15 +187,6 @@ class MainPiece(Piece):
         extrapiece = self.board.get_extrapiece_at(square)
         if extrapiece != 0:
             return extrapiece.handle_collision(self)
-            assert self.can_equip(extrapiece) and extrapiece.can_equip(self)
-            if extrapiece.color == self.color:
-                assert self.bonus is None
-                set_bonus = "set_bonus", self, None, extrapiece
-                return set_bonus,
-            else:
-                assert self.malus is None
-                set_malus = "set_malus", self, None, extrapiece
-                return set_malus,
 
         return ()
 

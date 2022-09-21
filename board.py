@@ -136,6 +136,9 @@ class Board:
     def undo(self, move):
         """ Undo the last move """
 
+        if self.display is not None:
+            print("UNDO")
+
         move.undo_commands()
 
         """for after_move in move.after_moves:
@@ -349,6 +352,9 @@ class Move:
                 self.turn_number += .5
                 self.counter50rule = last_move.counter50rule + .5
 
+        # backup storage for stone push (seen as a capture but not a capture)
+        self.counter50rule_backup = self.counter50rule
+
         captured = board[end_square]
         if captured != 0:
             self.execute_command("capture", captured, self.piece)
@@ -388,21 +394,32 @@ class Move:
         if command in ("after_move", "before_move"):
             self.commands.append((command, self.board.move(args[0], args[1])))
         elif command == "anticapture":
-            cap_to_rem = None
+            command_to_rem = None
             for prev_command in self.commands:
                 if prev_command[0] == "capture" and prev_command[1] is args[0]:
-                    cap_to_rem = prev_command
+                    command_to_rem = prev_command
                     break
-            assert cap_to_rem is not None
-            self.commands.remove(cap_to_rem)
+            assert command_to_rem is not None
+            self.commands.remove(command_to_rem)
+            command_to_rem[1].uncapture()
             self.captures -= 1
+            if self.captures == 0:
+                self.counter50rule = self.counter50rule_backup
+        elif command == "cancel_mainmove":
+            command_to_rem = None
+            for prev_command in self.commands:
+                if prev_command[0] == "main_move":
+                    command_to_rem = prev_command
+                    break
+            assert command_to_rem is not None
+            self.commands.remove(command_to_rem)
         elif command == "capture":
+            self.captures += 1
+            self.counter50rule = 0
             self.commands.append(("capture", *args))
             captured = args[0]
             capturer = args[1]
             self.execute_commands(captured.capture(capturer))
-            self.counter50rule = 0
-            self.captures += 1
         elif command == "main_move":
             self.commands.append(("main_move",))
             self.execute_commands(self.piece.go_to(self.end_square))

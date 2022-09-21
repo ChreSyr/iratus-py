@@ -7,16 +7,6 @@ class Dynamite(Bonus):
 
     LETTER = "dy"
 
-    def handle_allycapture(self, capturer):
-
-        return
-
-        super().handle_allycapture(capturer)
-
-        if capturer:  # False when a piece with dynamite is captured by a piece with dynamite
-            capture = "capture", capturer
-            return capture,
-
     def handle_collision(self, mainpiece):
 
         if mainpiece.color == self.color:

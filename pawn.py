@@ -41,7 +41,7 @@ class Pawn(MainPiece):
             last_move = self.board.game.history[-1]
             if self.board[last_move.end_square] is piece_behind and \
                     abs(last_move.start_square - last_move.end_square) == 2:
-                en_passant = "capture", piece_behind
+                en_passant = "capture", piece_behind, self
                 return commands + (en_passant,)
 
         return commands

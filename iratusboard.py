@@ -153,9 +153,6 @@ class IratusBoardCalculator(IratusBoard):
         for ep, clone_ep in self.ep_correspondence.items():
             clone_ep.copy(ep)
 
-        # for trap, clone_trap in self.traps_correspondence.items():
-        #     clone_trap.square = trap.square  # TODO : copy
-
     def get_simulated_piece(self, piece):
 
         try:

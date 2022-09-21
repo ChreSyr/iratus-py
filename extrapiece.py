@@ -55,7 +55,7 @@ class Bonus(ExtraPiece):
 
     def handle_allycapture(self, capturer):
 
-        return
+        return ("set_bonus", self.ally, self, None),
 
         self.is_captured = True
 
@@ -104,6 +104,9 @@ class Malus(ExtraPiece):
     def can_equip(self, mainpiece):
 
         return False
+
+    def handle_victimcapture(self, capturer):
+        """ Called from victim.capture() """
 
     def set_victim(self, piece):
 
