@@ -109,3 +109,6 @@ class MenuButtonsZone(bp.Zone):
 
         bp.Button(self, text="Play iratus", row=1, loc="center",
                   command=bp.PrefilledFunction(self.application.open, "IratusScene"))
+
+        bp.Button(self, text="Play iratus 2", row=2, loc="center",
+                  command=bp.PrefilledFunction(self.application.open, "Iratus2Scene"))

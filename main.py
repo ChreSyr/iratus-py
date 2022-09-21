@@ -17,7 +17,7 @@ from scenes import MenuScene, GameScene
 from game import Game
 from board import BoardDisplay
 from chessboard import ChessBoard
-from iratusboard import IratusBoard
+from iratusboard import IratusBoard, Iratus2Board
 from dog import EnragedDog
 
 
@@ -50,13 +50,17 @@ class IratusApp(bp.Application):
             for c in ("w", "b"):
                 self.images[c+p] = load("Images/"+c+p+".png")
 
-        self.iratus_scene = GameScene(self, board_class=IratusBoard, name="IratusScene")
+        self.menu_scene = MenuScene(self)
         self.chess_scene = GameScene(self, board_class=ChessBoard, name="ChessScene")
+        self.iratus_scene = GameScene(self, board_class=IratusBoard, name="IratusScene")
+        self.iratus2_scene = GameScene(self, board_class=Iratus2Board, name="Iratus2Scene")
+
         iratus_promotion_choices = BoardDisplay.STYLE["promotion_choices"].copy()
         iratus_promotion_choices["Enraged Dog"] = EnragedDog
         self.iratus_scene.set_style_for(BoardDisplay, background_image=bp.image.load("Images/iratusboard.png"),
                                         promotion_choices=iratus_promotion_choices)
-        self.menu_scene = MenuScene(self)
+        self.iratus2_scene.set_style_for(BoardDisplay, background_image=bp.image.load("Images/iratusboard.png"),
+                                         promotion_choices=iratus_promotion_choices)
 
         self.quit_game_dialog = QuitGameDialog(self)
 

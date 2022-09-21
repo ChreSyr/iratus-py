@@ -1,5 +1,6 @@
 
 from board import Board, BoardDisplay, BoardPosition
+from dynamite import Dynamite
 from trap import Trap
 from pawn import TorpedoPawn
 from stone import Stone
@@ -122,6 +123,73 @@ class IratusBoardPosition(BoardPosition):
 
 
 class IratusBoardCalculator(IratusBoard):
+
+    def __init__(self, board):
+
+        IratusBoard.__init__(self, board.game)
+
+        self.real_board = board
+
+        self.pieces_correspondence = {}
+        for i, piece in enumerate(board.pieces):
+            self.pieces_correspondence[piece] = self.pieces[i]
+
+        self.ep_correspondence = {}
+        for i, ep in enumerate(board.extrapieces):
+            self.ep_correspondence[ep] = self.extrapieces[i]
+
+    def clone(self):
+
+        self._squares = [0] * 80
+        for piece, clone_piece in self.pieces_correspondence.items():
+            clone_piece.copy(piece)
+        for ep, clone_ep in self.ep_correspondence.items():
+            clone_ep.copy(ep)
+
+    def get_simulated_piece(self, piece):
+
+        try:
+            return self.pieces_correspondence[piece]
+        except KeyError:
+            return self.ep_correspondence[piece]
+
+
+class Iratus2Board(IratusBoard):
+
+    def _create_pieces(self):
+
+        # Creating pieces
+        for square in range(2, 73, 10):
+            TorpedoPawn(self, "b", square)
+        for square in range(7, 78, 10):
+            TorpedoPawn(self, "w", square)
+
+        Stone(self, "b", 0), Stone(self, "b", 70), Stone(self, "w", 9), Stone(self, "w", 79)
+        Dynamite(self, "b", 30), Dynamite(self, "b", 40), Dynamite(self, "w", 39), Dynamite(self, "w", 49)
+        Knight(self, "b", 11), Knight(self, "b", 61), Knight(self, "w", 18), Knight(self, "w", 68)
+        Bishop(self, "b", 21), Bishop(self, "b", 51), Bishop(self, "w", 28), Bishop(self, "w", 58)
+        dogs = (Dog(self, "b", 10), Dog(self, "b", 60), Dog(self, "w", 19), Dog(self, "w", 69))
+        Leash(self, "b", 20, dogs[0]), Leash(self, "b", 50, dogs[1])
+        Leash(self, "w", 29, dogs[2]), Leash(self, "w", 59, dogs[3])
+        Rook(self, "b", 1), Rook(self, "b", 71), Rook(self, "w", 8), Rook(self, "w", 78)
+        Queen(self, "b", 31), Queen(self, "w", 38)
+        self.king = {"b": King(self, "b", 41), "w": King(self, "w", 48)}
+
+    def init_display(self, scene):
+
+        if self.display is not None:
+            raise PermissionError
+
+        self.display = BoardDisplay(self, scene, square_size=64)
+        for piece in self.pieces:
+            piece.init_display()
+        for ep in self.extrapieces:
+            ep.init_display()
+
+        self.calculator = Iratus2BoardCalculator(self)
+
+
+class Iratus2BoardCalculator(Iratus2Board):
 
     def __init__(self, board):
 
