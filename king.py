@@ -3,9 +3,6 @@
 from mainpiece import MainPiece
 
 
-# TODO : King cannot ride a trap ? Or yes ?
-
-
 class King(MainPiece):
 
     LETTER = "k"

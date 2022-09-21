@@ -147,11 +147,6 @@ class Game:
 
         assert piece.color is self.turn
 
-        # TODO
-        if hasattr(last_undone_move, "unequiped_trap"):
-            if last_undone_move.unequiped_trap is not None:
-                last_undone_move.unequiped_trap.trap_widget.hide()  # so the unequipement works
-
         self.board.redo(last_undone_move)
         self.history.append(last_undone_move)
 

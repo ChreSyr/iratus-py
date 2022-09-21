@@ -196,9 +196,6 @@ class MainPiece(Piece):
 
     def set_bonus(self, bonus):
 
-        if self.widget:
-            print(f"SET BONUS {bonus} TO {self}")
-
         if bonus is not None:
             assert bonus.color == self.color
             assert bonus.ally is None
@@ -224,9 +221,6 @@ class MainPiece(Piece):
             self.malus.set_victim(None)
 
         self.malus = malus
-
-        if self.widget:
-            print(f"SET MALUS {malus} TO {self}")
 
     def uncapture(self):
         # The board call this function when this piece was captured but "undo" is done
@@ -349,6 +343,8 @@ class MainPieceMovingTwice(MainPiece):
         if commands:
             for command, *args in commands:
                 if command == "set_malus" and args[2] is not None and args[2].LETTER == "c":
+                    return commands
+                elif command == "capture" and args[0] is self:
                     return commands
 
         self.still_has_to_move = not self.still_has_to_move

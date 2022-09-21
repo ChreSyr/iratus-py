@@ -51,13 +51,6 @@ class Piece:
 
         self.board[original.square] = self
 
-        # TODO : can be replaced by a transform somewhere ?
-        # piece_class = original.__class__
-        # for attr in piece_class.ATTR_TO_COPY:
-        #     setattr(self, attr, getattr(piece_class, attr))
-        # for method in piece_class.METH_TO_COPY:
-        #     setattr(self, method, bp.PrefilledFunction(getattr(piece_class, method), self))
-
         if self.square != original.square:
             self.go_to(original.square)
 

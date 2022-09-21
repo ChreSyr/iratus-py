@@ -23,8 +23,6 @@ class Stone(MainPiece):
         while rolling:
             rolling = False
 
-            # print(rolling_square, x, y, d)
-
             if self.board.has_square(x + dx, y + dy):
                 if square + d not in self.board.existing_squares:
                     raise AssertionError
@@ -76,7 +74,6 @@ class Stone(MainPiece):
 
         roll = self._roll(self.square // 10 - start_square // 10, self.square % 10 - start_square % 10)
         if roll:  # The stone has not been ejected
-            # print("Stone roll : from {} to {}".format(square, captured_piece.square))
             self.ignore_next_link = True
             return roll
 

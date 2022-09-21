@@ -28,7 +28,6 @@ class Board:
         self.extrapieces_set = {"w": (), "b": ()}
 
         # List of all the square
-        # TODO : remove ? is it only used by assertions ?
         self.nbranks = nbranks
         self.existing_squares = ()
         for col in range(0, 71, 10):
@@ -136,9 +135,6 @@ class Board:
     def undo(self, move):
         """ Undo the last move """
 
-        if self.display is not None:
-            print("UNDO")
-
         move.undo_commands()
 
         """for after_move in move.after_moves:
@@ -215,9 +211,6 @@ class BoardDisplay(bp.Zone):
         self.vm_watermarks_layer = bp.GridLayer(self, bp.Rectangle, weight=1, name="vm_watermarks_layer",
                                                 row_height=self.square_size, col_width=self.square_size,
                                                 nbcols=8, nbrows=board.nbranks)
-        # This layer contains the informative squares, as the selection square
-        # TODO : remove ?
-        self.informative_squares_layer = bp.Layer(self, bp.Rectangle, weight=2, name="informative_squares_layer")
 
         # This layer is right behind the pieces
         self.back_layer = bp.Layer(self, name="back_layer", weight=3)
@@ -332,11 +325,6 @@ class Move:
 
         self.piece = board[start_square]
         self.commands = []
-        self.trap_equipement = None
-        self.trap_capture = None
-        self.unequiped_trap = None
-        self.destroyed_trap = None
-        self.broken_cage = None
 
         self.captures = 0
         self.notation = None
@@ -529,15 +517,8 @@ class Move:
                 self.board.undo(args[0])
             elif command == "capture":
                 captured = args[0]
-                # if not captured.is_captured:
-                #     assert captured is self.piece
-                #     continue  # TODO : works even when removed ?
                 captured.uncapture()
             elif command == "main_move":
-                # piece = self[move.end_square]
-                # if self.piece.is_captured:
-                #     assert self.piece in self.captures
-                #     move.piece.uncapture()
                 self.piece.undo(self)
             elif command == "set_bonus":
                 args[0].set_bonus(args[1])  # mainpiece = args[0], old_bonus = args[1]
@@ -545,7 +526,6 @@ class Move:
                 args[0].set_malus(args[1])  # mainpiece = args[0], old_malus = args[1]
             elif command == "transform":
                 args[0].transform(args[1])  # piece = args[0], old_class = args[1]
-                # TODO : fix : sometimes, self[transformation[0]] return 0 (dynamite ?)
             else:
                 raise ValueError(command)
 
