@@ -50,21 +50,6 @@ class Cage(Malus):
         assert capturer.LETTER == "s"
         return ("anticapture", self.victim),
 
-    def set_victim(self, piece):
-
-        super().set_victim(piece)
-
-        self.is_captured = self.victim is None
-
-        if self.widget:
-            if self.is_captured:
-                self.widget.hide()
-            else:
-                self.widget.show()
-
-        if piece is not None:
-            self.go_to(piece.square)
-
     def update_victim_vm(self):
         self.victim.valid_moves = ()
         self.victim.antiking_squares = ()

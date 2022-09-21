@@ -66,8 +66,9 @@ class Piece:
         Should only be called by the board
         """
 
+        self.square = square
+
         if self.is_captured:
-            self.square = square
             return
 
         # Memorizing the new position for the display

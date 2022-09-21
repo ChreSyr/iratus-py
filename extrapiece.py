@@ -116,5 +116,16 @@ class Malus(ExtraPiece):
         if piece is not None and piece.widget is not None:
             piece.widget.signal.MOTION.connect(self._handle_victim_widget_motion, owner=self.widget)
 
+        self.is_captured = self.victim is None
+
+        if self.widget:
+            if self.is_captured:
+                self.widget.hide()
+            else:
+                self.widget.show()
+
+        if piece is not None:
+            self.go_to(piece.square)
+
     def update_victim_vm(self):
         """ Upadte self.victim.valid_moves or antiking_squares """

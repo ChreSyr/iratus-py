@@ -431,7 +431,7 @@ class Move:
             args[0].set_bonus(args[2])  # mainpiece = args[0], new_bonus = args[2]
         elif command == "set_malus":
             self.commands.append((command, *args))
-            args[0].set_malus(args[2])  # mainpiece = args[0], new_malus = args[2]
+            self.execute_commands(args[0].set_malus(args[2]))  # mainpiece = args[0], new_malus = args[2]
         elif command == "set_next_turn":
             self.next_turn = args[0]
         elif command == "transform":

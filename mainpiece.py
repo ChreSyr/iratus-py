@@ -214,21 +214,19 @@ class MainPiece(Piece):
 
     def set_malus(self, malus):
 
-        if self.widget:
-            print(f"SET MALUS {malus} TO {self}")
-
         if malus is not None:
             assert malus.color != self.color
             assert malus.victim is None
+            assert self.malus is None
             malus.set_victim(self)
 
-        if self.malus is None:
-            assert malus is not None
         else:
-            assert malus is None
             self.malus.set_victim(None)
 
         self.malus = malus
+
+        if self.widget:
+            print(f"SET MALUS {malus} TO {self}")
 
     def uncapture(self):
         # The board call this function when this piece was captured but "undo" is done

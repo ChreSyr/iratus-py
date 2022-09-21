@@ -25,6 +25,15 @@ class Dog(MainPiece):
                 commands = commands + (capture,)
         return commands
 
+    def set_malus(self, malus):
+
+        super().set_malus(malus)
+
+        if malus is not None and malus.LETTER == "c":
+            leash_capture = "capture", self.leash, malus
+            enragement = "transform", self, EnragedDog
+            return leash_capture, enragement
+
     def update_valid_moves(self):
 
         if self.is_captured:
