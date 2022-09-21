@@ -29,7 +29,7 @@ class Dog(MainPiece):
 
         super().set_malus(malus)
 
-        if malus is not None and malus.LETTER == "c":
+        if malus is not None and malus.LETTER == "c" and not self.leash.is_captured:
             leash_capture = "capture", self.leash, malus
             enragement = "transform", self, EnragedDog
             return leash_capture, enragement
@@ -74,9 +74,6 @@ class Dog(MainPiece):
 
 
 class EnragedDog(MainPieceMovingTwice):
-
-    # TODO : when an enraged dog gets trapped on first move ?
-    # TODO : solve : when an enraged dog gets captured on the first move, the allies can move
 
     LETTER = "ed"
     moves = ((1, 0), (0, 1), (-1, 0), (0, -1))

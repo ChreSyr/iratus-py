@@ -76,23 +76,28 @@ class IratusBoard(Board):
 
                 for move in piece.valid_moves:
 
-                    valid = False
                     history_element = self.calculator.move(cloned_piece.square, piece.square + move)
                     for enemy_cloned_piece in self.calculator.set[cloned_piece.enemy_color]:
                         enemy_cloned_piece.update_valid_moves()
 
-                    cloned_piece.update_valid_moves()
-                    for move2 in cloned_piece.valid_moves:
+                    if history_element.next_turn == piece.color:
 
-                        history_element2 = self.calculator.move(cloned_piece.square, cloned_piece.square + move2)
-                        for enemy_cloned_piece2 in self.calculator.set[cloned_piece.enemy_color]:
-                            enemy_cloned_piece2.update_valid_moves()
+                        valid = False
+                        cloned_piece.update_valid_moves()
+                        for move2 in cloned_piece.valid_moves:
 
-                        if not self.calculator.king[piece.color].in_check:
-                            valid = True
-                        self.calculator.undo(history_element2)
-                        if valid:
-                            break
+                            history_element2 = self.calculator.move(cloned_piece.square, cloned_piece.square + move2)
+                            for enemy_cloned_piece2 in self.calculator.set[cloned_piece.enemy_color]:
+                                enemy_cloned_piece2.update_valid_moves()
+
+                            if not self.calculator.king[piece.color].in_check:
+                                valid = True
+                            self.calculator.undo(history_element2)
+                            if valid:
+                                break
+
+                    else:
+                        valid = not self.calculator.king[piece.color].in_check
 
                     self.calculator.undo(history_element)
                     if valid:

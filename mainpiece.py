@@ -345,6 +345,12 @@ class MainPieceMovingTwice(MainPiece):
 
         commands = MainPiece.go_to(self, square)
 
+        # if just trapped, ignore second move
+        if commands:
+            for command, *args in commands:
+                if command == "set_malus" and args[2] is not None and args[2].LETTER == "c":
+                    return commands
+
         self.still_has_to_move = not self.still_has_to_move
         if self.still_has_to_move:
             return commands + (("set_next_turn", self.color),)
